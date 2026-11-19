@@ -312,7 +312,7 @@ function fit() {
 }
 const pt = (e) => ({ x: (e.clientX - offX) / scale, y: (e.clientY - offY) / scale });
 const MIN_MOVE = 10;   // 이만큼 당겨야 넘김으로 확정
-const DWELL_MS = 200;  // 옆면에서 이만큼 멈추면 그 쪽을 고른 것으로 본다
+const DWELL_MS = 120;  // 옆면에서 이만큼 멈추면 그 쪽을 고른 것으로 본다
 
 function showHint(x, y) {
   const t = press.target;
