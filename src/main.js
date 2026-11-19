@@ -312,6 +312,7 @@ function fit() {
 }
 const pt = (e) => ({ x: (e.clientX - offX) / scale, y: (e.clientY - offY) / scale });
 const MIN_MOVE = 10;   // 이만큼 당겨야 넘김으로 확정
+const DWELL_MS = 200;  // 옆면에서 이만큼 멈추면 그 쪽을 고른 것으로 본다
 
 function showHint(x, y) {
   const t = press.target;
@@ -441,7 +442,8 @@ stage.addEventListener('pointerdown', (e) => {
   // sel: 고른 쪽(소수). 손가락 아래 쪽 + offset(색인 스냅·미세 조정으로 생긴 차이). committed: 마지막으로 멈칫한 곳의 쪽.
   const sel = hit.rawPage ?? hit.target;
   const offset = hit.kind === 'bundle' ? sel - pageAtX(hit.side, x, L, N, layout(L, N)) : 0;
-  press = { id: e.pointerId, hit, page, target: hit.target, sel, offset, committed: sel, onEdge: true, v: 0,
+  // locked: 짚은 직후나 멈칫한 뒤에는 펼친 면 쪽 이동을 넘기기로 보고 고른 쪽을 바꾸지 않는다.
+  press = { id: e.pointerId, hit, page, target: hit.target, sel, offset, committed: sel, locked: true, onEdge: true, v: 0,
     x0: x, y0: y, t0: e.timeStamp, moved: 0, started: false, lastX: x, lastY: y, lastT: e.timeStamp, vx: 0 };
   if (hit.kind !== 'none') { prefetch(hit.target, hit.target + 1); showHint(x, y); }
   drawEdges(L);
@@ -463,22 +465,32 @@ stage.addEventListener('pointermove', (e) => {
     // 색인 탭: 구간 첫 쪽으로 바로 가므로 지금처럼 조금만 당겨도 넘긴다.
     if (bundle && dt > 0) {
       // 터치 이벤트 간격이 고르지 않아 속도를 약 30ms 동안 고른다. 멈췄다 움직이면 예전 속도는 바로 잊는다.
-      press.v += (Math.abs(dx) / dt - press.v) * Math.min(1, dt / 30);
+      // 멈췄다 움직인 첫 이벤트는 dt가 길어 아주 느린 것으로 잘못 읽히므로 시간 간격을 50ms까지만 센다.
+      press.v += (Math.abs(dx) / Math.min(dt, 50) - press.v) * Math.min(1, dt / 30);
       const onEdge = inward <= G.EDGE_REACH, w = fineWeight(press.v);
       if (onEdge) {
-        press.offset = followEdge(press.offset, dx, press.v, lay.k);
-        press.sel = pageAtX(press.hit.side, x, L, N, lay) + press.offset;
+        const toward = right ? dx < 0 : dx > 0, under = pageAtX(press.hit.side, x, L, N, lay);
+        if (press.locked && toward && w < 0.5) {
+          // 짚거나 멈칫한 뒤 펼친 면 쪽으로 끄는 중: 넘기려는 동작이므로 고른 묶음을 그대로 둔다.
+          press.offset = press.sel - under;
+        } else {
+          if (!toward && w < 0.5) press.locked = false; // 바깥쪽으로 다시 훑으면 손가락을 따라간다
+          press.offset = followEdge(press.offset, dx, press.v, lay.k);
+          press.sel = under + press.offset;
+        }
       } else {
         if (press.onEdge) press.sel = press.committed; // 옆면을 그대로 긁고 들어온 몫은 버린다
         press.sel += w * dx * 2 / G.FINE_PX;          // 지면 안에서는 아주 천천히 움직일 때만 한 장씩
       }
       press.sel = Math.min(N, Math.max(1, press.sel));
       if (!onEdge) press.offset = press.sel - pageAtX(press.hit.side, x, L, N, lay);
-      if (w > 0.5) press.committed = press.sel;
-      // 갑자기 멈추면 이벤트가 더 오지 않으므로, 0.12초 동안 안 움직이면 그 자리를 멈칫한 곳으로 본다.
+      if (w > 0.5) { press.committed = press.sel; press.locked = true; } // 아주 천천히 맞춘 곳도 멈칫한 곳
+      // 갑자기 멈추면 이벤트가 더 오지 않으므로, DWELL_MS 동안 안 움직이면 그 자리를 멈칫한 곳으로 본다.
       clearTimeout(press.dwell);
       const held = press;
-      if (onEdge) held.dwell = setTimeout(() => { if (press === held && !held.started && held.onEdge) held.committed = held.sel; }, 120);
+      if (onEdge) held.dwell = setTimeout(() => {
+        if (press === held && !held.started && held.onEdge) { held.committed = held.sel; held.locked = true; }
+      }, DWELL_MS);
       press.onEdge = onEdge;
       const t = targetLeft(press.sel, L, press.hit.side, N);
       if (t !== press.target) { press.target = t; prefetch(t, t + 1); paperSound.tick(); }
