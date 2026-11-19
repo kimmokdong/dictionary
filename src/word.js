@@ -16,6 +16,8 @@ export function nearestEntry(lines, y) {
 }
 
 export const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+// 받침이 있으면 '이에요', 없으면 '예요'(한글 음절이 아니면 '예요').
+export const isIt = (w) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return `이건 '${w}'${c >= 0 && c < 11172 && c % 28 ? '이에요' : '예요'}`; };
 
 export function entryHtml(entry) {
   const grades = ['학교 가기 전', '1~2학년', '3~4학년', '5~6학년'];

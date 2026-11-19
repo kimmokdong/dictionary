@@ -1,4 +1,4 @@
-import { esc, spreadForEntry } from './word.js';
+import { esc, spreadForEntry, isIt } from './word.js';
 
 const LIMIT = 100000, KEY = 'dictionary-quickfind-v1';
 export function timerStage(elapsed) {
@@ -43,6 +43,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   function stop() {
     clearTimers(); run = null; phase = 'idle'; closePicker(); card.hidden = note.hidden = true;
     button.textContent = '놀이'; highlight(null); hideHint(); changed();
+    $('gameNext').hidden = $('gameFeedbackActions').hidden = true;
   }
   function fail() { stop(); $('status').textContent = '놀이 자료를 읽지 못했습니다. 놀이 버튼으로 다시 시작해 주세요.'; }
   function showFeedback(text) {
@@ -50,7 +51,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     position(note, side); note.hidden = false;
   }
   function renderPicker() {
-    let html = '<h2>낱말 빨리 찾기</h2><p>한 판 5문제 · 문제마다 100초<br>같은 세트 번호로 함께 찾아봐요.</p>';
+    let html = '<button type="button" data-action="games">놀이 고르기</button><h2>낱말 빨리 찾기</h2><p>한 판 5문제 · 문제마다 100초<br>같은 세트 번호로 함께 찾아봐요.</p>';
     for (const level of ['쉬움', '보통', '어려움']) {
       html += `<h3>${level}</h3><div class="game-sets">` + source.sets.filter((s) => s.level === level).map((s) => {
         const best = bests[s.set];
@@ -63,7 +64,6 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   async function choose() {
     if (!idle() || loading) return;
     closeAbout(); highlight(null); note.hidden = true;
-    if (!panel.hidden) { closePicker(); return; }
     loading = true;
     try { source ??= await readJson('data/build/games/quick-find.json'); renderPicker(); }
     catch { fail(); }
@@ -80,6 +80,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     card.hidden = false; $('gameWord').textContent = current.w;
     $('gameMeaning').textContent = current.hint ?? ''; $('gameMeaning').title = current.hint ?? '';
     $('gameNumber').textContent = `${run.records.length + 1}/5`;
+    $('gameTime').hidden = false;
     $('gameTime').textContent = '100초'; $('gameGuide').hidden = true;
     await open(null, () => run === session);
     if (run !== session) return;
@@ -144,21 +145,11 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
       else { stop(); if (action === 'choose') choose(); else button.focus(); }
     };
   }
-  button.addEventListener('click', () => {
-    if (!idle()) return;
-    if (active()) { if (confirm('낱말 찾기 놀이를 그만하고 사전으로 돌아갈까요?')) stop(); }
-    else choose();
-  });
-  panel.addEventListener('click', (e) => {
-    const set = source?.sets.find((s) => s.set === Number(e.target.closest('button')?.dataset.set));
-    if (set) start(set).catch(fail);
-  });
-  document.addEventListener('pointerdown', (e) => {
-    if (!panel.contains(e.target) && !button.contains(e.target)) closePicker();
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { closePicker(); button.focus(); } });
   const api = {
+    choose, stop,
+    startSet(number) { const set = source?.sets.find((s) => s.set === number); if (set) return start(set).catch(fail); },
     get active() { return active(); }, get finding() { return finding(); }, get tabHint() { return hintTab; },
+    get tabs() { return true; }, get hideGuide() { return false; },
     flipped(completed, kind) {
       if (!finding()) return;
       if (completed) current.flips++;
@@ -176,7 +167,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
           .catch((error) => { entryChunks.delete(c); throw error; }));
         const entry = (await entryChunks.get(c)).find((e) => e.seq === seq);
         if (current !== record || !finding()) return;
-        showFeedback(`이건 '${entry.w}'예요`);
+        showFeedback(isIt(entry.w));
         toastTimer = setTimeout(() => { note.hidden = true; }, 1500);
       } catch { if (current === record && finding()) showFeedback('다른 낱말이에요. 계속 찾아봐요.'); }
     },

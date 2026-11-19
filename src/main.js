@@ -2,7 +2,7 @@
 import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, fineWeight, followEdge } from './geometry.js';
 import { firstEntry, spreadForEntry, nearestEntry, esc, entryHtml } from './word.js';
 import { paperSound } from './sound.js';
-import { createQuickFind } from './quickfind.js';
+import { createGames } from './games.js';
 
 const SIZES = ['normal', 'large', 'xlarge'];
 let size = 'normal';
@@ -38,7 +38,7 @@ let L = Math.min(lastLeft(N), Math.max(0, Number(params.get('p')) || 0) & ~1); /
 let flip = null;   // 넘기는 중: { lo, hi, dir, phi, bend }
 let press = null;  // 누르는 중: { id, hit, target, x0, y0, started, ... }
 let changing = false, selected = null;
-let quickFind;
+let game;
 
 // ---------- 쪽 내용 ----------
 let chunks = new Map();
@@ -118,10 +118,10 @@ function drawEdges(pos) {
   ctx.fillStyle = '#e6dec9'; ctx.fillRect(lay.leftX0, top + h, lay.rightX1 - lay.leftX0, 5);
   ctx.fillStyle = 'rgba(0,0,0,0.18)'; for (let y = top + h + 1; y < top + h + 5; y += 2) ctx.fillRect(lay.leftX0, y, lay.rightX1 - lay.leftX0, 1);
   ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(lay.spine - 1, top + h, 2, 5);
-  const chips = tabChips(pos, sections, lay);
+  const tabs = game?.tabs !== false, chips = tabs ? tabChips(pos, sections, lay) : [];
   const rowH = h / sections.length;
   // 구간 띠: 실제 종이 분량만큼의 폭
-  sections.forEach((s, i) => {
+  if (tabs) sections.forEach((s, i) => {
     const a = s.start, b = s.start + s.pages; // [a, b)
     ctx.fillStyle = tabColor(i); ctx.globalAlpha = 0.6;
     const y = top + i * rowH + 6, hh = rowH - 12;
@@ -152,7 +152,7 @@ function drawEdges(pos) {
     ctx.fillStyle = tabColor(c.i, held ? 62 : 46);
     ctx.beginPath(); ctx.roundRect(c.x + lift, c.y, c.w, c.h, 5); ctx.fill();
     ctx.restore();
-    if (quickFind?.tabHint === c.i) {
+    if (game?.tabHint === c.i) {
       ctx.save(); ctx.strokeStyle = '#ffe38b'; ctx.lineWidth = 4;
       ctx.globalAlpha = .5 + .5 * Math.sin(performance.now() / 180) ** 2;
       ctx.shadowColor = '#ffe38b'; ctx.shadowBlur = 12;
@@ -173,7 +173,7 @@ function drawZoom(lay) {
   zoomCtx.fillStyle = '#eee5d0'; zoomCtx.fillRect(0, 0, w, h);
   zoomCtx.drawImage(canvas, sx, sy, w / magnification, h / magnification, 0, 0, w, h);
   // 확대 범위에 걸친 구간 띠를 한 줄에 모아 색인 사이 위치를 보여 준다.
-  sections.forEach((s, i) => {
+  if (game?.tabs !== false) sections.forEach((s, i) => {
     const a = Math.max(s.start, right ? L + 1 : 1), b = Math.min(s.end, right ? N : L);
     if (a > b) return;
     zoomCtx.fillStyle = tabColor(i);
@@ -291,12 +291,13 @@ function settle(endPhi) {
     const u = Math.min(1, (now - t0) / dur), e = 1 - (1 - u) ** 3;
     setPhi(from + (endPhi - from) * e);
     if (u < 1) return requestAnimationFrame(step);
-    quickFind.flipped(endPhi === 180 ? flip.dir > 0 : flip.dir < 0, flip.grabKind);
+    const completed = endPhi === 180 ? flip.dir > 0 : flip.dir < 0, kind = flip.grabKind;
     L = endPhi === 180 ? flip.hi : flip.lo;
     paperSound.land();
     flip = null;
     setBandDisabled(false);
     showSpread();
+    game.flipped(completed, kind);
   };
   requestAnimationFrame(step);
 }
@@ -317,9 +318,11 @@ const DWELL_MS = 120;  // 옆면에서 이만큼 멈추면 그 쪽을 고른 것
 function showHint(x, y) {
   const t = press.target;
   hint.style.display = ['tab', 'bundle'].includes(press.hit.kind) ? 'block' : 'none';
-  const words = `${index.guides[Math.max(0, t - 1)][0]} ~ ${index.guides[Math.min(N - 1, t)][1]}`;
-  zoomGuide.textContent = `${words}\n${t}–${t + 1}쪽`;
-  hint.setAttribute('aria-label', `${words}, ${t}–${t + 1}쪽 옆면 4배 확대`);
+  const hideGuide = !!game?.hideGuide;
+  hint.classList.toggle('picture-only', hideGuide); zoomGuide.hidden = hideGuide;
+  const words = hideGuide ? '' : `${index.guides[Math.max(0, t - 1)][0]} ~ ${index.guides[Math.min(N - 1, t)][1]}`;
+  zoomGuide.textContent = hideGuide ? '' : `${words}\n${t}–${t + 1}쪽`;
+  hint.setAttribute('aria-label', hideGuide ? '옆면 4배 확대' : `${words}, ${t}–${t + 1}쪽 옆면 4배 확대`);
   // 위쪽 공간이 부족한 책 모서리에서는 손가락 옆으로 비켜 둔다.
   const left = y < 124 ? x + (press.hit.side === 'right' ? -196 : 16) : x - 90;
   hint.style.left = Math.min(G.STAGE_W - 180, Math.max(0, left)) + 'px';
@@ -335,7 +338,7 @@ function closeNote() {
 function closeAbout() { about.hidden = true; aboutButton.setAttribute('aria-expanded', 'false'); }
 function setBandDisabled(disabled) {
   band.querySelectorAll('button').forEach((button) => { button.disabled = disabled ||
-    (quickFind?.active && !!button.dataset.size) || (button.id === 'fullscreen' && !document.fullscreenEnabled); });
+    (game?.active && !!button.dataset.size) || (button.id === 'fullscreen' && !document.fullscreenEnabled); });
 }
 function pageAt(x, y) {
   if (y < G.TOP || y > G.TOP + G.PAGE_H) return null;
@@ -350,7 +353,7 @@ async function selectWord(page, y) {
   });
   const seq = nearestEntry(lines, y);
   if (seq === null) return;
-  if (quickFind.active) { await quickFind.pick(seq, page === el.underL ? 'left' : 'right'); return; }
+  if (game.active) { await game.pick(seq, page === el.underL ? 'left' : 'right'); return; }
   const selection = selected = { seq };
   for (const p of Object.values(el)) p.querySelectorAll('.line').forEach((line) => line.classList.toggle('word-selected', Number(line.dataset.e) === seq));
   const lay = layout(L, N);
@@ -375,7 +378,7 @@ aboutButton.addEventListener('click', () => {
 });
 sizeControls.addEventListener('click', async (e) => {
   const nextSize = e.target.closest('button')?.dataset.size;
-  if (flip || press || changing || quickFind.active || !SIZES.includes(nextSize) || nextSize === size) return;
+  if (flip || press || changing || game.active || !SIZES.includes(nextSize) || nextSize === size) return;
   const seq = firstEntry(index, L);
   changing = true; setBandDisabled(true); closeNote(); closeAbout();
   status.textContent = '글씨 크기를 바꾸고 있어요…';
@@ -432,10 +435,10 @@ document.addEventListener('pointerdown', (e) => {
 band.addEventListener('keydown', () => paperSound.unlock());
 
 stage.addEventListener('pointerdown', (e) => {
-  if (press || flip || changing || (quickFind.active && !quickFind.finding) || !e.isPrimary || e.button !== 0 || e.target.closest('[data-ui]')) return;
+  if (press || flip || changing || (game.active && !game.finding) || !e.isPrimary || e.button !== 0 || e.target.closest('[data-ui]')) return;
   closeNote(); closeAbout();
   const { x, y } = pt(e);
-  const hit = hitTest(x, y, L, N, sections);
+  const hit = hitTest(x, y, L, N, sections, { tabs: game.tabs });
   const page = pageAt(x, y);
   if (hit.kind === 'none' && !page) return;
   stage.setPointerCapture(e.pointerId);
@@ -556,8 +559,8 @@ if (DEBUG) {
     get N() { return N; }, get sections() { return sections; }, get size() { return size; } };
 }
 
-quickFind = createQuickFind({
-  readJson, getIndex: () => index, idle: () => !flip && !press && !changing, closeAbout,
+game = createGames({
+  readJson, getIndex: () => index, getLeft: () => L, idle: () => !flip && !press && !changing, closeAbout,
   changed: () => setBandDisabled(!!flip || changing),
   redraw: () => { if (!flip) drawEdges(L); },
   position: (element, side) => {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { timerStage, summarize, betterRecord, parseBests, serializeBests, resultPraise } from '../src/quickfind.js';
-import { linkQuickFind } from '../scripts/data/games.mjs';
+import { linkGame } from '../scripts/data/games.mjs';
 
 test('놀이 타이머: 30·60·100초 경계와 남은 시간', () => {
   assert.deepEqual(timerStage(0), { remaining: 100, tab: false, guide: false, expired: false });
@@ -47,11 +47,11 @@ test('놀이 칭찬: 색인 사용·다시 도전한 과정을 말하고 순위�
 test('문제 연결: ID·표기 일치와 원본 보존, 없는 ID와 다른 표기는 실패', () => {
   const source = { version: 1, sets: [{ set: 1, items: [{ id: '10', w: '눈', hint: '날씨' }] }] };
   const entries = [{ id: '10', seq: 7, w: '눈' }];
-  const linked = linkQuickFind(source, entries);
+  const linked = linkGame('낱말 빨리 찾기', source, entries);
   assert.deepEqual(linked.sets[0].items[0], { id: '10', w: '눈', hint: '날씨', seq: 7 });
   assert.equal(source.sets[0].items[0].seq, undefined);
-  assert.throws(() => linkQuickFind(source, []), /1세트.*10/);
-  assert.throws(() => linkQuickFind(source, [{ ...entries[0], w: '다른 낱말' }]), /사전과 맞지/);
+  assert.throws(() => linkGame('낱말 빨리 찾기', source, []), /낱말 빨리 찾기 1세트.*10/);
+  assert.throws(() => linkGame('낱말 빨리 찾기', source, [{ ...entries[0], w: '다른 낱말' }]), /사전과 맞지/);
 });
 
 test('생성 문제: 원본 12세트·60문제 모두 정확한 entries 순번에 연결된다', () => {
@@ -59,7 +59,7 @@ test('생성 문제: 원본 12세트·60문제 모두 정확한 entries 순번�
   const built = JSON.parse(fs.readFileSync('data/build/games/quick-find.json', 'utf8'));
   const entries = fs.readdirSync('data/build/entries').sort().flatMap((file) =>
     JSON.parse(fs.readFileSync(`data/build/entries/${file}`, 'utf8')));
-  assert.deepEqual(built, linkQuickFind(source, entries));
+  assert.deepEqual(built, linkGame('낱말 빨리 찾기', source, entries));
   assert.equal(built.sets.length, 12);
   assert.equal(built.sets.flatMap((s) => s.items).length, 60);
   for (const set of built.sets) {

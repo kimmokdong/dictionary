@@ -49,3 +49,9 @@ test('쪽지: 추가 정보가 없으면 지면 안내만 보인다', () => {
   const html = entryHtml({ w: '가', pos: '조사', grade: 1, pronunciation: [], forms: [], senses: [], phrases: [], derived: [] });
   assert.ok(html.includes('이 낱말은 지면에 실린 내용이 전부예요.'));
 });
+
+test('오답 문구: 받침 있으면 이에요, 없으면 예요', async () => {
+  const { isIt } = await import('../src/word.js');
+  assert.equal(isIt('그리움'), "이건 '그리움'이에요");
+  assert.equal(isIt('우유'), "이건 '우유'예요");
+});

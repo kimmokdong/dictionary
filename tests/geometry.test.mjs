@@ -96,3 +96,20 @@ test('한 장 넘김에는 스냅이 없고 끝에서는 넘길 수 없다', () 
   assert.equal(hitTest(layout(end, N).rightX0 - 40, midY(5), end, N, sections).kind, 'none');
   assert.equal(hitTest(700, midY(5), 1000, N, sections).kind, 'none'); // 지면 가운데
 });
+
+test('색인 없이: 탭 자리도 묶음으로 잡고 가까운 색인에 스냅하지 않는다', () => {
+  for (const L of [0, 1500]) {
+    const lay = layout(L, N), chip = tabChips(L, sections, lay)[1];
+    const hit = hitTest(chip.x + chip.w / 2, chip.y + chip.h / 2, L, N, sections, { tabs: false });
+    assert.equal(hit.kind, 'bundle');
+    assert.equal(hit.snapped, false);
+    assert.equal(hit.tabIndex, -1);
+    const x = xOfPage(498, L, lay) + 2;
+    const near = hitTest(x, midY(9), L, N, sections, { tabs: false });
+    assert.equal(near.snapped, false);
+    assert.equal(near.target, targetLeft(pageAtX(near.side, x, L, N, lay), L, near.side, N));
+  }
+  const lay = layout(380, N);
+  assert.deepEqual(hitTest(lay.rightX0 - 40, midY(5), 380, N, sections, { tabs: false }),
+    { kind: 'page', side: 'right', target: 382 });
+});

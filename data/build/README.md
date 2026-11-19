@@ -31,8 +31,9 @@ entries와 같은 순서로 500개씩. NNNN = floor(seq / 500). 조판에는 사
 지면에 실린 예문은 제외한다. 빈 배열은 해당 정보가 없음을 뜻한다.
 report/summary.json의 `notes.entriesWithInfo`는 정보가 있는 항목 수, `notes.totalBytes`는 notes 전체 바이트 수다.
 
-## games/quick-find.json
-`data/games/quick-find.json`의 문제 세트에 `seq`(entries 정렬 순번)를 추가한다.
+## games/quick-find.json · games/open-once.json
+`data/games/quick-find.json`(낱말 빨리 찾기)과 `data/games/open-once.json`(한 번에 펼치기)의 문제 세트에 `seq`(entries 정렬 순번)를 추가한다.
+한 번에 펼치기는 8세트·세트당 10문제이며 `level`은 쉬움(색인 사용) 또는 어려움(색인 없이)이다.
 문제의 `id` 또는 `w`가 사전과 맞지 않으면 기존 빌드 결과를 지우기 전에 실패한다.
 원본 문제 파일은 수정하지 않는다.
 

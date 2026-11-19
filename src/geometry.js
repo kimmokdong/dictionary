@@ -77,14 +77,14 @@ export function tabChips(L, sections, lay) {
 
 // 터치 시작점이 무엇을 잡았는지 판정한다.
 // 반환 kind: 'tab'(색인) | 'bundle'(종이 묶음) | 'page'(한 장) | 'none'
-export function hitTest(x, y, L, N, sections) {
+export function hitTest(x, y, L, N, sections, { tabs = true } = {}) {
   const lay = layout(L, N);
   const none = { kind: 'none' };
   if (y < G.TOP || y > G.TOP + G.PAGE_H) return none;
   const can = { right: L < lastLeft(N), left: L > 0 };
 
   const p = G.CHIP_PAD;
-  for (const c of tabChips(L, sections, lay)) {
+  for (const c of tabs ? tabChips(L, sections, lay) : []) {
     if (x < c.x - p || x > c.x + c.w + p || y < c.y - p || y > c.y + c.h + p) continue;
     // 지금 펼친 면에서 시작하는 구간의 탭은 넘길 것이 없다.
     if (c.start === L || c.start === L + 1 || !can[c.side]) return none;
@@ -97,7 +97,7 @@ export function hitTest(x, y, L, N, sections) {
     if (!can[side]) return none;
     let q = pageAtX(side, x, L, N, lay);
     let snapped = false, tabIndex = -1, best = Infinity;
-    sections.forEach((s, i) => {
+    if (tabs) sections.forEach((s, i) => {
       if ((s.start > L ? 'right' : 'left') !== side || s.start === L || s.start === L + 1) return;
       const dx = x - xOfPage(s.start, L, lay); // 양수면 구간 안쪽, 음수면 앞 구간 쪽
       const width = (dx >= 0 ? s.pages : sections[i - 1]?.pages ?? 0) * lay.k;

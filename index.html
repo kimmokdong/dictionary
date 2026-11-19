@@ -10,7 +10,7 @@
     <h1>국어사전</h1>
     <button id="gameButton" type="button" aria-expanded="false" aria-controls="gamePanel">놀이</button>
     <div id="gameCard" hidden>
-      <div><strong id="gameWord"></strong> <span id="gameNumber"></span> <b id="gameTime" role="timer"></b></div>
+      <div><strong id="gameWord"></strong> <span id="gameNumber"></span> <b id="gameTime" role="timer"></b><button id="gameNext" type="button" hidden>다음 문제</button></div>
       <div id="gameMeaning"></div>
       <div id="gameGuide" hidden></div>
     </div>
@@ -26,7 +26,7 @@
       <button id="aboutButton" type="button" aria-expanded="false" aria-controls="aboutPanel">이 사전에 대하여</button>
     </div>
   </header>
-  <section id="gamePanel" data-ui aria-label="놀이 세트 고르기" hidden></section>
+  <section id="gamePanel" data-ui aria-label="놀이와 세트 고르기" hidden></section>
   <div id="aboutPanel" data-ui hidden>
     <p>국립국어원의 「국어 기초 어휘 선정 및 어휘 등급화 목록」(2024, 공공누리 제1유형)으로 낱말과 등급을 골랐습니다.</p>
     <p>뜻풀이·예문·품사·관련어는 국립국어원 「한국어기초사전」(2026-10-19 내려받기본, CC BY-SA 2.0 KR)에서 가져왔습니다.</p>
@@ -48,6 +48,7 @@
   <div id="status" role="status" aria-live="polite"></div>
   <aside id="gameNote" data-ui aria-label="낱말 찾기 기록" hidden>
     <p id="gameFeedback" role="status" aria-live="polite"></p>
+    <div id="gameFeedbackActions" class="game-actions" hidden></div>
     <div id="gameResults" hidden></div>
   </aside>
   <pre id="debug" hidden></pre>
