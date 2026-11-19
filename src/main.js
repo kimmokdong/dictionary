@@ -1,5 +1,5 @@
 // 책 본체: 넓은 옆면, 색인 탭, 휘면서 넘어가는 종이(한 장과 묶음 모두 같은 방식).
-import { G, layout, xOfPage, tabChips, hitTest, lastLeft, riffleTarget } from './geometry.js';
+import { G, layout, xOfPage, tabChips, hitTest, lastLeft, slideTarget } from './geometry.js';
 import { firstEntry, spreadForEntry, nearestEntry, esc, entryHtml } from './word.js';
 import { paperSound } from './sound.js';
 import { createQuickFind } from './quickfind.js';
@@ -449,23 +449,27 @@ stage.addEventListener('pointermove', (e) => {
   const { x, y } = pt(e), right = press.hit.side === 'right';
   press.moved = Math.max(press.moved, Math.hypot(x - press.x0, y - press.y0));
   if (press.hit.kind === 'none') return;
-  const dt = e.timeStamp - press.lastT, dy = y - press.lastY;
-  if (dt > 0) { press.vx = (x - press.lastX) / dt; press.lastX = x; press.lastY = y; press.lastT = e.timeStamp; }
+  const dt = e.timeStamp - press.lastT, dx = x - press.lastX;
+  if (dt > 0) { press.vx = dx / dt; press.lastX = x; press.lastY = y; press.lastT = e.timeStamp; }
+  const bundle = press.hit.kind === 'bundle';
   if (!press.started) {
-    const pull = right ? press.x0 - x : x - press.x0;
-    if (['tab', 'bundle'].includes(press.hit.kind) && pull < MIN_MOVE) {
-      press.riffle = riffleTarget(press.riffle, dy, dt, L, N, press.hit.side);
+    const lay = layout(L, N), edge = right ? lay.rightX0 : lay.leftX1;
+    // 옆면 묶음: 천천히 가로로 움직이면 한 장씩 고르고, 펼친 면 안으로 FLIP_IN만큼 들어와야 넘김을 시작한다.
+    // 색인 탭: 구간 첫 쪽으로 바로 가므로 지금처럼 조금만 당겨도 넘긴다.
+    if (bundle && dt > 0) {
+      press.riffle = slideTarget(press.riffle, dx, dt, L, N, press.hit.side);
       const t = 2 * Math.round(press.riffle / 2);
       if (t !== press.target) { press.target = t; prefetch(t, t + 1); paperSound.tick(); }
     }
     showHint(x, y);
-    if (pull < MIN_MOVE) { drawEdges(L); return; }
+    const pull = right ? press.x0 - x : x - press.x0, inward = right ? edge - x : x - edge;
+    if (bundle ? inward < G.FLIP_IN : pull < MIN_MOVE) { drawEdges(L); return; }
     press.started = true;
     hint.style.display = 'none';
-    const lay = layout(L, N);
-    press.grab = press.x0 - (right ? lay.rightX0 : lay.leftX1); // 손가락과 종이 바깥 끝 사이 거리
+    // 손가락과 종이 바깥 끝 사이 거리. 묶음은 손가락이 이미 지면 안쪽에 있으므로 아래에서 줄여 가며 따라잡게 한다.
+    press.grab = (bundle ? x : press.x0) - edge;
     startFlip(press.target);
-  }
+  } else if (bundle) press.grab *= 0.8;
   const lay = layout(flip.lo + (flip.hi - flip.lo) * flip.phi / 180, N);
   // 종이 바깥 끝이 손가락을 따라오도록 넘김 각도를 찾는다(끝의 가로 위치는 각도가 커질수록 줄어든다).
   const want = x - press.grab - lay.spine;
@@ -481,6 +485,16 @@ function release(e, cancel) {
   const moved = Math.max(held.moved, Math.hypot(x - held.x0, y - held.y0));
   const vx = e.timeStamp - press.lastT > 80 ? 0 : press.vx; // 멈췄다가 놓으면 속도로 치지 않는다
   endPress();
+  if (!started && !cancel && held.hit.kind === 'bundle') {
+    // 넘김 시작 지점 전에 놓았어도 펼친 면 쪽으로 빠르게 튕겼으면 고른 쪽까지 넘긴다.
+    const right = held.hit.side === 'right', lay = layout(L, N);
+    const inward = right ? lay.rightX0 - x : x - lay.leftX1;
+    if (inward >= G.FLICK_IN && (right ? vx < -0.5 : vx > 0.5)) {
+      startFlip(held.target); flip.grabKind = held.hit.kind;
+      settle(right ? 180 : 0);
+      return;
+    }
+  }
   if (!started) {
     drawEdges(L);
     if (!cancel && moved < 8 && e.timeStamp - held.t0 <= 500 && held.page && ['none', 'page'].includes(held.hit.kind)) selectWord(held.page, held.y0);

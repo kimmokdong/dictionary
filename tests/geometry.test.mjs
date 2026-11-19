@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, riffleTarget } from '../src/geometry.js';
+import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, slideTarget } from '../src/geometry.js';
 
 const N = 2547;
 // 판정 회귀 검사에 사용하는 고정 구간 시작 쪽
@@ -25,38 +25,34 @@ test('옆면 위치와 쪽 번호는 서로 되돌릴 수 있다', () => {
   for (const q of [1001, 1500, 2547]) assert.ok(Math.abs(pageAtX('right', xOfPage(q, L, lay), L, N, lay) - q) < 1e-6);
 });
 
-test('훑기: 느리면 10px당 한 장, 빠르면 최대 30배, 위아래 방향', () => {
+test('가로 훑기: 천천히 움직이면 FINE_PX마다 한 장, 오른쪽이 뒤쪽 쪽', () => {
   for (const side of ['left', 'right']) {
     const L = side === 'right' ? 0 : 2000;
-    assert.equal(riffleTarget(1000, 10, 1000, L, N, side), 1002);
-    assert.equal(riffleTarget(1000, -10, 1000, L, N, side), 998);
-    assert.equal(riffleTarget(1000, 10, 5, L, N, side), 1060);
-    assert.equal(riffleTarget(1000, -10, 5, L, N, side), 940);
+    assert.equal(slideTarget(1000, G.FINE_PX, 1000, L, N, side), 1002);
+    assert.equal(slideTarget(1000, -G.FINE_PX, 1000, L, N, side), 998);
   }
-  let previous = 1002;
-  for (const speed of [.05, .1, .3, .7, 1, 1.49, 1.5, 3]) {
-    const target = riffleTarget(1000, 10, 10 / speed, 0, N, 'right');
-    assert.ok(target >= previous && target <= 1060);
-    previous = target;
-  }
-  const a = riffleTarget(1000, 10, 10 / .7499, 0, N, 'right');
-  const b = riffleTarget(1000, 10, 10 / .7501, 0, N, 'right');
-  assert.ok(Math.abs(a - b) < .02);
+  let target = 1000; // 1px씩 다섯 번이면 한 장
+  for (let i = 0; i < G.FINE_PX; i++) target = slideTarget(target, 1, 100, 0, N, 'right');
+  assert.ok(Math.abs(target - 1002) < 1e-9);
 });
 
-test('훑기: 작은 이동 누적, 시간 없는 이벤트, 정지와 옆면 범위·끝에서 역방향', () => {
-  let target = 1000;
-  for (let i = 0; i < 20; i++) target = riffleTarget(target, .5, 100, 0, N, 'right');
-  assert.ok(Math.abs(target - 1002) < 1e-9);
-  assert.equal(riffleTarget(1000, 0, 10, 0, N, 'right'), 1000);
-  assert.equal(riffleTarget(1000, 10, 0, 0, N, 'right'), 1000);
-  assert.equal(riffleTarget(1000, 10, -1, 0, N, 'right'), 1000);
-  assert.equal(riffleTarget(1000, -10000, 1, 800, N, 'right'), 802);
-  assert.equal(riffleTarget(1000, 10000, 1, 800, N, 'right'), lastLeft(N));
-  assert.equal(riffleTarget(500, -10000, 1, 800, N, 'left'), 0);
-  assert.equal(riffleTarget(500, 10000, 1, 800, N, 'left'), 798);
-  assert.equal(riffleTarget(lastLeft(N), -10, 1000, 800, N, 'right'), lastLeft(N) - 2);
-  assert.equal(riffleTarget(0, 10, 1000, 800, N, 'left'), 2);
+test('가로 훑기: 빠르면 고른 쪽 고정, 사이는 부드럽게 줄어듦', () => {
+  const at = (speed) => slideTarget(1000, 10, 10 / speed, 0, N, 'right');
+  assert.equal(at(G.FINE_FAST), 1000);
+  assert.equal(at(3), 1000);
+  assert.equal(at(G.FINE_SLOW), 1004);
+  let previous = Infinity;
+  for (const speed of [.05, .15, .2, .3, .4, .45, 1]) { assert.ok(at(speed) <= previous); previous = at(speed); }
+});
+
+test('가로 훑기: 시간 없는 이벤트와 옆면 범위 제한', () => {
+  assert.equal(slideTarget(1000, 0, 10, 0, N, 'right'), 1000);
+  assert.equal(slideTarget(1000, 10, 0, 0, N, 'right'), 1000);
+  assert.equal(slideTarget(1000, 10, -1, 0, N, 'right'), 1000);
+  assert.equal(slideTarget(1000, -10000, 100000, 800, N, 'right'), 802);
+  assert.equal(slideTarget(1000, 10000, 100000, 800, N, 'right'), lastLeft(N));
+  assert.equal(slideTarget(500, -10000, 100000, 800, N, 'left'), 0);
+  assert.equal(slideTarget(500, 10000, 100000, 800, N, 'left'), 798);
 });
 
 test('펼칠 면: 목표 쪽이 보이고 넘기는 방향으로 한 장 이상 움직인다', () => {
