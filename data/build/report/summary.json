@@ -1,0 +1,118 @@
+{
+  "builtAt": "2026-11-19T03:10:49.032Z",
+  "krdictTotal": 56555,
+  "byGrade": {
+    "1": {
+      "listed": 5000,
+      "matched": 4963
+    },
+    "2": {
+      "listed": 2500,
+      "matched": 2454
+    },
+    "3": {
+      "listed": 5500,
+      "matched": 5331
+    },
+    "4": {
+      "listed": 10000,
+      "matched": 8632
+    }
+  },
+  "posFallback": 41,
+  "narrowedByOrigin": 1576,
+  "multiKept": 1236,
+  "skippedNonHangul": 0,
+  "sensesRemoved": 138,
+  "entriesRemoved": 35,
+  "removeMissing": 0,
+  "entries": 22089,
+  "examplesEdited": 5876,
+  "examplesEditSkipped": 0,
+  "sizes": {
+    "normal": {
+      "fontSize": 16,
+      "pageCount": 2757,
+      "overflowLines": 0,
+      "sections": {
+        "ㄱ": 415,
+        "ㄴ": 123,
+        "ㄷ": 244,
+        "ㄹ": 9,
+        "ㅁ": 182,
+        "ㅂ": 266,
+        "ㅅ": 308,
+        "ㅇ": 399,
+        "ㅈ": 302,
+        "ㅊ": 123,
+        "ㅋ": 33,
+        "ㅌ": 72,
+        "ㅍ": 95,
+        "ㅎ": 186
+      }
+    },
+    "large": {
+      "fontSize": 18,
+      "pageCount": 3416,
+      "overflowLines": 0,
+      "sections": {
+        "ㄱ": 513,
+        "ㄴ": 152,
+        "ㄷ": 305,
+        "ㄹ": 11,
+        "ㅁ": 224,
+        "ㅂ": 333,
+        "ㅅ": 383,
+        "ㅇ": 493,
+        "ㅈ": 372,
+        "ㅊ": 150,
+        "ㅋ": 41,
+        "ㅌ": 90,
+        "ㅍ": 119,
+        "ㅎ": 230
+      }
+    },
+    "xlarge": {
+      "fontSize": 20,
+      "pageCount": 4046,
+      "overflowLines": 0,
+      "sections": {
+        "ㄱ": 606,
+        "ㄴ": 182,
+        "ㄷ": 362,
+        "ㄹ": 13,
+        "ㅁ": 265,
+        "ㅂ": 394,
+        "ㅅ": 453,
+        "ㅇ": 582,
+        "ㅈ": 441,
+        "ㅊ": 179,
+        "ㅋ": 48,
+        "ㅌ": 108,
+        "ㅍ": 140,
+        "ㅎ": 273
+      }
+    }
+  },
+  "missingGlyphs": {
+    "∼": 1,
+    "大": 1,
+    "室": 1,
+    "十": 1,
+    "院": 1,
+    "園": 1,
+    "之": 1,
+    "車": 1
+  },
+  "outputBytes": {
+    "entries": 6719748,
+    "notes": 15152889,
+    "normal": 6986385,
+    "large": 7209451,
+    "xlarge": 7411252
+  },
+  "notes": {
+    "entriesWithInfo": 22066,
+    "totalBytes": 15152889
+  }
+}

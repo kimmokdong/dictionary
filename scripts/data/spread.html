@@ -1,0 +1,74 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>펼친 면 글씨 크기 확인</title>
+<!-- 개발용 확인 도구. 300e 화면(1366×768)과 같은 픽셀 크기로 펼친 두 쪽을 그린다. 실제 앱이 아니다. -->
+<style>
+@font-face{font-family:P;font-weight:400;src:url(../../assets/fonts/Pretendard-Regular.woff2)}
+@font-face{font-family:P;font-weight:700;src:url(../../assets/fonts/Pretendard-Bold.woff2)}
+html,body{margin:0;background:#3b2f2a;overflow:hidden}
+#stage{position:relative;width:1366px;height:768px;font-family:P;font-kerning:none;color:#222}
+#book{position:absolute;left:8px;top:10px;right:8px;bottom:10px;display:flex}
+.edge{width:92px;background:repeating-linear-gradient(90deg,#e9e2cf 0 2px,#d6cdb6 2px 3px)}
+.page{flex:1;background:#fbf7ea;box-sizing:border-box;padding:40px 0 0;display:flex;flex-direction:column;align-items:center}
+.page.left{box-shadow:inset -18px 0 18px -14px #0005}.page.right{box-shadow:inset 18px 0 18px -14px #0005}
+.guide{width:var(--text-width);display:flex;justify-content:space-between;font-weight:700;font-size:14px;line-height:20px;border-bottom:1px solid #999;margin-bottom:10px}
+.body{width:var(--text-width);height:620px}
+.num{font-size:12px;color:#666;margin-top:6px}
+.line{white-space:pre}
+.k-s{vertical-align:super}.k-p{color:#666}.k-x,.k-r{color:#555}
+.k-l{color:#666;border:1px solid #999;border-radius:3px;padding:0 2px;margin:0 2px}
+#bar{position:fixed;left:50%;top:0;transform:translateX(-50%);background:#fffd;padding:2px 8px;border-radius:0 0 8px 8px;font:13px sans-serif;z-index:9}
+#bar button{font:inherit;margin:0 2px}
+</style>
+<div id="bar">
+  글씨 <button data-size="normal">보통 16</button><button data-size="large">크게 18</button><button data-size="xlarge">아주 크게 20</button>
+  | <button id="prev">◀</button> <span id="where"></span> <button id="next">▶</button>
+  | 낱말 <input id="word" size="6" value="나비"><button id="go">찾기</button>
+</div>
+<div id="stage"><div id="book">
+  <div class="edge"></div><div class="page left" id="L"></div><div class="page right" id="R"></div><div class="edge"></div>
+</div></div>
+<script type="module">
+const B = '../../data/build/';
+const json = (f) => fetch(B + f).then((r) => r.json());
+const pad = (n) => String(n).padStart(4, '0');
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+let size, index, left = 0, anchor = null; // left: 왼쪽 면 쪽 번호(짝수, 0이면 빈 면)
+
+async function getPage(n) {
+  if (n < 1 || n > index.pageCount) return null;
+  const chunk = await json(`${size}/pages-${pad(Math.floor((n - 1) / index.pagesPerChunk))}.json`);
+  return chunk.find((p) => p.n === n);
+}
+function render(el, p) {
+  if (!p) { el.innerHTML = ''; return; }
+  el.style.fontSize = index.fontSize + 'px';
+  el.innerHTML = `<div class="guide"><span>${esc(p.g[0])}</span><span>${esc(p.g[1])}</span></div><div class="body">` +
+    p.l.map((l) => `<div class="line" style="height:${index.lineHeight}px;line-height:${index.lineHeight}px;` +
+      `margin-left:${l.i ? index.indent : 0}px;margin-top:${l.g ? index.entryGap : 0}px">` +
+      l.r.map(([k, t]) => `<span class="k-${k}" style="font-size:${index.kinds[k].scale}em;font-weight:${index.kinds[k].font === 'bold' ? 700 : 400}">${esc(t)}</span>`).join('') +
+      '</div>').join('') + `</div><div class="num">${p.n}</div>`;
+}
+async function show() {
+  const [l, r] = await Promise.all([getPage(left), getPage(left + 1)]);
+  render(document.getElementById('L'), l); render(document.getElementById('R'), r);
+  anchor = (l ?? r).l.find((x) => x.h)?.e ?? (l ?? r).l[0].e;
+  document.getElementById('where').textContent = `${left}–${left + 1} / ${index.pageCount}쪽`;
+}
+async function setSize(s) {
+  size = s; index = await json(`${s}/index.json`);
+  document.getElementById('stage').style.setProperty('--text-width', index.textWidth + 'px');
+  if (anchor != null) left = index.entryPage[anchor] & ~1; // 보던 표제어 기준으로 위치 복원
+  show();
+}
+document.querySelectorAll('[data-size]').forEach((b) => (b.onclick = () => setSize(b.dataset.size)));
+document.getElementById('prev').onclick = () => { left = Math.max(0, left - 2); show(); };
+document.getElementById('next').onclick = () => { left = Math.min(index.pageCount & ~1, left + 2); show(); };
+document.getElementById('go').onclick = () => {
+  const w = document.getElementById('word').value.trim();
+  const i = index.guides.findIndex((g, n) => g[0].replace(/\(\d+\)/, '') <= w && (index.guides[n + 1]?.[0].replace(/\(\d+\)/, '') ?? '힣힣') > w);
+  if (i >= 0) { left = (i + 1) & ~1; show(); }
+};
+await setSize('normal');
+document.getElementById('go').click();
+</script>

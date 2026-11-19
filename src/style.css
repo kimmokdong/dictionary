@@ -1,0 +1,134 @@
+@font-face { font-family: Dict; font-weight: 400; src: url(../assets/fonts/Pretendard-Regular.woff2); }
+@font-face { font-family: Dict; font-weight: 700; src: url(../assets/fonts/Pretendard-Bold.woff2); }
+
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+  background: #2b211c radial-gradient(ellipse at 50% 40%, #4a3a30, #1f1713 85%); }
+
+/* 56px 도구 띠와 1366×768 책을 함께 확대·축소한다(main.js). */
+:root {
+  --paper: #fbf7ea;
+  /* 은은한 종이결: 한 번만 그려지는 고정 무늬 */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#reader {
+  position: absolute; left: 0; top: 0; width: 1366px; height: 824px; transform-origin: 0 0;
+  font-family: Dict, sans-serif; font-kerning: none; color: #222;
+  touch-action: auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+#stage { position: absolute; left: 0; top: 56px; width: 1366px; height: 768px; }
+#cover, .page, #edges, #slab, #slabShadow { touch-action: none; }
+/* 표지: 지면보다 조금 크게 보이는 가죽 느낌의 판 */
+#cover { position: absolute; left: 0; top: 11px; width: 1366px; height: 747px; border-radius: 7px;
+  background: linear-gradient(#6b4330, #54321f 50%, #452818); box-shadow: 0 8px 18px #000a, inset 0 0 0 2px #7c5540, inset 0 0 14px #0006; }
+#edges { position: absolute; left: 0; top: 0; pointer-events: none; }
+
+.page {
+  position: absolute; left: 0; top: 19px; width: var(--page-width); height: 730px; box-sizing: border-box;
+  background: var(--paper); padding-top: 26px; display: flex; flex-direction: column; align-items: center;
+  will-change: transform; contain: strict;
+}
+/* 책등 쪽으로 종이가 말려 들어가는 곡면: 어두워졌다가 살짝 밝아지는 띠 */
+.page.left { background-image: linear-gradient(to left, #0000003d, #00000014 3%, #ffffff30 7%, #fff0 16%), var(--grain); }
+.page.right { background-image: linear-gradient(to right, #0000003d, #00000014 3%, #ffffff30 7%, #fff0 16%), var(--grain); }
+#slabShadow { position: absolute; left: 0; top: 19px; height: 730px; display: none; transform-origin: 0 0; pointer-events: none;
+  background: linear-gradient(to right, #00000066, #00000022 55%, #0000); }
+.guide { width: var(--text-width); display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; line-height: 20px; border-bottom: 1px solid #999; margin-bottom: 10px; }
+.body { width: var(--text-width); height: 620px; }
+.num { font-size: 12px; color: #666; margin-top: 8px; }
+.line { white-space: pre; }
+.k-s { vertical-align: super; }
+.k-p { color: #666; }
+.k-x, .k-r { color: #555; }
+.k-l { color: #666; border: 1px solid #999; border-radius: 3px; padding: 0 2px; margin: 0 2px; }
+
+/* 넘어가는 종이: 책등을 축으로 도는 곡면. 세로 조각(.strip)마다 각도가 다르다. */
+#slab { position: absolute; left: 0; top: 0; width: var(--page-width); height: 768px; transform-style: preserve-3d; display: none; }
+.strip { position: absolute; left: 0; top: 19px; width: var(--strip-width); height: 730px; transform-origin: 0 50%; transform-style: preserve-3d; will-change: transform; }
+/* 조각 사이로 아래가 비치지 않게 2px 겹친다. */
+.sf { position: absolute; left: 0; top: 0; width: calc(var(--strip-width) + 2px); height: 730px; overflow: hidden; backface-visibility: hidden; background: var(--paper); }
+.sf.back { transform: rotateY(180deg); left: -2px; }
+.page.inner { top: 0; will-change: auto; }
+/* 묶음의 아래쪽 단면: 종이가 층층이 쌓인 면. 이것이 없으면 묶음 속이 비어 보인다. */
+.cap { position: absolute; left: 0; top: 730px; width: calc(var(--strip-width) + 2px); transform-origin: 0 0; transform: rotateX(90deg);
+  background: repeating-linear-gradient(0deg, #f2ebd9 0 1px, #d3cab2 1px 2px); }
+.sf .shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+#slabEdge { position: absolute; left: var(--strip-width); top: 0; height: 730px; transform-origin: 0 50%; transform: rotateY(-90deg);
+  background: repeating-linear-gradient(90deg, #efe8d6 0 1px, #cfc6ae 1px 2px); }
+
+#hint { position: absolute; display: none; width: 180px; height: 90px; box-sizing: border-box; z-index: 4;
+  background: #fffbe9; border: 1px solid #b9a77c; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 3px 9px #0005; pointer-events: none; }
+#hint canvas { display: block; }
+#hint > div { padding: 2px 6px; font-size: 12px; line-height: 16px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+#debug { position: absolute; left: 400px; top: 0; margin: 0; padding: 4px 8px; background: #000b; color: #9f9; font: 12px/1.4 monospace; pointer-events: none; }
+
+.line.word-selected { background: #e6dca67a; border-radius: 3px; }
+[data-ui] { position: absolute; z-index: 5; }
+#wordNote[hidden], #aboutPanel[hidden] { display: none; }
+button, input, summary, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible, #wordContent:focus-visible { outline: 3px solid #557d85; outline-offset: 3px; }
+button:disabled { cursor: wait; opacity: .6; }
+#wordNote { top: 72px; width: 500px; max-height: 620px; box-sizing: border-box; padding: 30px 22px 22px;
+  display: flex; background: #fff5d9; border: 1px solid #dfd0ac; border-radius: 2px;
+  box-shadow: 2px 6px 15px #49351b40; transform: rotate(-.6deg); }
+#wordNote[data-side="right"] { transform: rotate(.6deg); }
+#closeWord { position: absolute; right: 6px; top: 3px; width: 40px; height: 38px; border: 0; background: transparent; color: #69543e; font-size: 30px; }
+#wordContent { overflow: auto; overscroll-behavior: contain; touch-action: pan-y; width: 100%; min-height: 0; font-size: 22px; line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
+#wordTitle { font-size: 32px; line-height: 1.25; margin: 0 30px 8px 0; }
+#wordTitle sup { font-size: .6em; }
+.word-meta { font-size: 16px; color: #76654f; margin: 0 0 20px; }
+.sense + .sense { border-top: 1px solid #dfd0ac; margin-top: 18px; padding-top: 10px; }
+.sense p { margin: 8px 0; white-space: pre-wrap; }
+.sense h3 { color: #8b6344; font-size: 19px; margin: 16px 0 8px; }
+.word-example, .word-dialogue { color: #655d50; font-size: 19px; white-space: pre-wrap; }
+.word-dialogue { border-left: 2px solid #d9c8a3; padding-left: 12px; }
+.word-dialogue span { font-size: 14px; border: 1px solid #c9b993; border-radius: 3px; padding: 0 3px; }
+.sense small { color: #76654f; font-size: 14px; }
+#band { top: 0; left: 0; width: 1366px; height: 56px; box-sizing: border-box; padding: 4px 18px 4px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; z-index: 7;
+  background: linear-gradient(#e8deca, #d8c9af); color: #4e3e2e; border-bottom: 1px solid #a99576; box-shadow: 0 2px 8px #1f160d40; }
+#band h1 { font-size: 23px; letter-spacing: 2px; margin: 0; white-space: nowrap; }
+#bandControls, #sizeControls { display: flex; align-items: center; gap: 8px; }
+#sizeControls { gap: 3px; margin-right: 10px; }
+#sizeControls > span { font-size: 15px; margin-right: 6px; }
+#band button { min-height: 48px; padding: 0 14px; border: 1px solid #bead91; border-radius: 6px; background: #f8f1e3; color: #594735; font-size: 16px; touch-action: manipulation; }
+#band button:hover { background: #fff9ec; }
+#band button[aria-pressed="true"] { background: #79634b; color: #fff8e9; border-color: #69543e; }
+#aboutPanel { top: 62px; right: 18px; z-index: 8; width: 360px; max-height: 620px; overflow: auto; box-sizing: border-box; padding: 18px;
+  background: #fff8e9; border: 1px solid #d3c3a7; border-radius: 7px; box-shadow: 0 5px 18px #21160c55;
+  font-size: 16px; line-height: 1.55; touch-action: pan-y; overscroll-behavior: contain; }
+#aboutPanel p { margin: 10px 0; font-size: 14px; color: #655d50; }
+#aboutPanel a { color: #65503e; }
+#status { position: absolute; z-index: 6; bottom: 20px; left: 50%; transform: translateX(-50%); max-width: 550px;
+  background: #fff8e9; box-shadow: 0 2px 8px #0004; padding: 7px 14px; border-radius: 5px; font-size: 16px; pointer-events: none; }
+#status:empty { display: none; }
+
+/* 놀이도 책 위의 작은 카드와 쪽지 안에서 진행한다. */
+#gamePanel[hidden], #gameCard[hidden], #gameGuide[hidden], #gameNote[hidden], #gameResults[hidden], #gameFeedback[hidden] { display: none; }
+#gameCard { flex: 1; min-width: 0; max-width: 360px; padding: 2px 10px; border-radius: 6px; background: #fff8e9; box-sizing: border-box; }
+#gameCard > div:first-child { display: flex; align-items: baseline; gap: 10px; }
+#gameWord { font-size: 22px; }
+#gameNumber { font-size: 14px; color: #76654f; }
+#gameTime { margin-left: auto; font-size: 19px; color: #496556; }
+#gameMeaning { font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#gameMeaning:empty { display: none; }
+#gameGuide { position: absolute; top: 58px; padding: 7px 12px; max-width: 430px; border: 1px solid #c5b48e; background: #fff5d9; box-shadow: 0 3px 8px #0003; font-size: 16px; border-radius: 5px; }
+#gamePanel { top: 62px; left: 122px; width: 490px; max-height: 700px; overflow: auto; padding: 20px; box-sizing: border-box;
+  background: #fff8e9; border: 1px solid #d3c3a7; border-radius: 7px; box-shadow: 0 5px 18px #21160c55; z-index: 8; touch-action: pan-y; }
+#gamePanel h2, #gameResults h2 { font-size: 24px; margin: 0 0 10px; }
+#gamePanel p { margin: 8px 0 14px; line-height: 1.5; color: #76654f; }
+#gamePanel h3 { font-size: 17px; margin: 14px 0 8px; color: #76654f; }
+.game-sets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.game-sets button, .game-actions button { min-height: 48px; padding: 9px 7px; color: #594735; background: #f3ead6; border: 1px solid #c5b48e; border-radius: 6px; touch-action: manipulation; }
+.game-sets button:hover, .game-actions button:hover { background: #e8dcbf; }
+.game-sets small { display: block; font-size: 11px; margin-top: 7px; }
+#gameNote { top: 72px; width: 500px; max-height: 620px; overflow: auto; box-sizing: border-box; padding: 24px;
+  background: #fff5d9; border: 1px solid #dfd0ac; border-radius: 3px; box-shadow: 2px 6px 15px #49351b40; touch-action: pan-y; }
+#gameFeedback { font-size: 25px; margin: 0; line-height: 1.5; }
+#gameResults { font-size: 18px; line-height: 1.6; }
+#gameResults table { width: 100%; border-collapse: collapse; font-size: 15px; }
+#gameResults caption { text-align: left; color: #76654f; font-size: 14px; }
+#gameResults th, #gameResults td { padding: 8px 3px; text-align: center; border-bottom: 1px solid #dfd0ac; }
+#gameResults .new-best { color: #496556; font-weight: 700; margin: 6px 0; }
+.game-actions { display: flex; gap: 8px; }

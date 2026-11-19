@@ -1,0 +1,23 @@
+{
+  "textWidth": 453,
+  "textHeight": 620,
+  "lineHeightRatio": 1.55,
+  "entryGapLines": 0.5,
+  "indentEm": 1,
+  "widthSafety": 0.98,
+  "examplesPerSense": 1,
+  "pagesPerChunk": 40,
+  "entriesPerChunk": 500,
+  "grades": [1, 2, 3, 4],
+  "sizes": { "normal": 16, "large": 18, "xlarge": 20 },
+  "kinds": {
+    "h": { "font": "bold", "scale": 1.15, "name": "표제어" },
+    "s": { "font": "regular", "scale": 0.65, "name": "어깨번호" },
+    "p": { "font": "regular", "scale": 0.8, "name": "품사" },
+    "n": { "font": "regular", "scale": 1, "name": "뜻번호" },
+    "d": { "font": "regular", "scale": 1, "name": "뜻풀이" },
+    "l": { "font": "bold", "scale": 0.8, "name": "꼬리표(예, 비슷한말, 반대말)" },
+    "x": { "font": "regular", "scale": 0.92, "name": "예문" },
+    "r": { "font": "regular", "scale": 0.92, "name": "관련어" }
+  }
+}

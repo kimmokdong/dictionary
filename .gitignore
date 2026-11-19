@@ -1,0 +1,5 @@
+node_modules/
+# 원자료(1.1GB)는 올리지 않는다. 받는 곳은 README 참고.
+data/raw/
+output/
+.claude/
