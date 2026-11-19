@@ -1,5 +1,5 @@
 // 책 본체: 넓은 옆면, 색인 탭, 휘면서 넘어가는 종이(한 장과 묶음 모두 같은 방식).
-import { G, layout, xOfPage, tabChips, hitTest, lastLeft, slideTarget } from './geometry.js';
+import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, fineWeight, followEdge } from './geometry.js';
 import { firstEntry, spreadForEntry, nearestEntry, esc, entryHtml } from './word.js';
 import { paperSound } from './sound.js';
 import { createQuickFind } from './quickfind.js';
@@ -438,8 +438,11 @@ stage.addEventListener('pointerdown', (e) => {
   const page = pageAt(x, y);
   if (hit.kind === 'none' && !page) return;
   stage.setPointerCapture(e.pointerId);
-  press = { id: e.pointerId, hit, page, target: hit.target, riffle: hit.target, x0: x, y0: y, t0: e.timeStamp,
-    moved: 0, started: false, dir: 0, anchor: x, lastX: x, lastY: y, lastT: e.timeStamp, vx: 0 };
+  // sel: 고른 쪽(소수). 손가락 아래 쪽 + offset(색인 스냅·미세 조정으로 생긴 차이). committed: 마지막으로 멈칫한 곳의 쪽.
+  const sel = hit.rawPage ?? hit.target;
+  const offset = hit.kind === 'bundle' ? sel - pageAtX(hit.side, x, L, N, layout(L, N)) : 0;
+  press = { id: e.pointerId, hit, page, target: hit.target, sel, offset, committed: sel, onEdge: true, v: 0,
+    x0: x, y0: y, t0: e.timeStamp, moved: 0, started: false, lastX: x, lastY: y, lastT: e.timeStamp, vx: 0 };
   if (hit.kind !== 'none') { prefetch(hit.target, hit.target + 1); showHint(x, y); }
   drawEdges(L);
 });
@@ -454,20 +457,33 @@ stage.addEventListener('pointermove', (e) => {
   const bundle = press.hit.kind === 'bundle';
   if (!press.started) {
     const lay = layout(L, N), edge = right ? lay.rightX0 : lay.leftX1;
-    // 옆면 묶음: 천천히 가로로 움직이면 한 장씩 고르고, 펼친 면 안으로 FLIP_IN만큼 들어와야 넘김을 시작한다.
+    const pull = right ? press.x0 - x : x - press.x0, inward = right ? edge - x : x - edge;
+    // 옆면 묶음: 옆면 위에서는 고른 쪽이 손가락 아래를 따라가고(아주 천천히 움직이면 한 장씩),
+    // 펼친 면 안으로 들어오면 마지막으로 멈칫했던 쪽으로 돌아가 FLIP_IN만큼 더 끌면 그 쪽까지 넘긴다.
     // 색인 탭: 구간 첫 쪽으로 바로 가므로 지금처럼 조금만 당겨도 넘긴다.
     if (bundle && dt > 0) {
-      // 방향이 바뀐 곳부터 다시 잰다: 쭉 그으면 점점 빨라지고, 되돌아오면 다시 한 장씩.
-      const dir = Math.sign(dx);
-      if (dir && dir !== press.dir) { press.dir = dir; press.anchor = x - dx; }
-      // 펼친 면 안에서는 가속하지 않는다(천천히 끌어 넘길 때 고른 쪽이 크게 밀리지 않게).
-      const run = (right ? edge - x : x - edge) > G.EDGE_REACH ? Math.abs(dx) / 2 : Math.abs(x - press.anchor);
-      press.riffle = slideTarget(press.riffle, dx, dt, run, L, N, press.hit.side);
-      const t = 2 * Math.round(press.riffle / 2);
+      // 터치 이벤트 간격이 고르지 않아 속도를 약 30ms 동안 고른다. 멈췄다 움직이면 예전 속도는 바로 잊는다.
+      press.v += (Math.abs(dx) / dt - press.v) * Math.min(1, dt / 30);
+      const onEdge = inward <= G.EDGE_REACH, w = fineWeight(press.v);
+      if (onEdge) {
+        press.offset = followEdge(press.offset, dx, press.v, lay.k);
+        press.sel = pageAtX(press.hit.side, x, L, N, lay) + press.offset;
+      } else {
+        if (press.onEdge) press.sel = press.committed; // 옆면을 그대로 긁고 들어온 몫은 버린다
+        press.sel += w * dx * 2 / G.FINE_PX;          // 지면 안에서는 아주 천천히 움직일 때만 한 장씩
+      }
+      press.sel = Math.min(N, Math.max(1, press.sel));
+      if (!onEdge) press.offset = press.sel - pageAtX(press.hit.side, x, L, N, lay);
+      if (w > 0.5) press.committed = press.sel;
+      // 갑자기 멈추면 이벤트가 더 오지 않으므로, 0.12초 동안 안 움직이면 그 자리를 멈칫한 곳으로 본다.
+      clearTimeout(press.dwell);
+      const held = press;
+      if (onEdge) held.dwell = setTimeout(() => { if (press === held && !held.started && held.onEdge) held.committed = held.sel; }, 120);
+      press.onEdge = onEdge;
+      const t = targetLeft(press.sel, L, press.hit.side, N);
       if (t !== press.target) { press.target = t; prefetch(t, t + 1); paperSound.tick(); }
     }
     showHint(x, y);
-    const pull = right ? press.x0 - x : x - press.x0, inward = right ? edge - x : x - edge;
     if (bundle ? inward < G.FLIP_IN : pull < MIN_MOVE) { drawEdges(L); return; }
     press.started = true;
     hint.style.display = 'none';

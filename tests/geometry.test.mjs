@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, slideTarget } from '../src/geometry.js';
+import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, fineWeight, followEdge } from '../src/geometry.js';
 
 const N = 2547;
 // 판정 회귀 검사에 사용하는 고정 구간 시작 쪽
@@ -25,51 +25,26 @@ test('옆면 위치와 쪽 번호는 서로 되돌릴 수 있다', () => {
   for (const q of [1001, 1500, 2547]) assert.ok(Math.abs(pageAtX('right', xOfPage(q, L, lay), L, N, lay) - q) < 1e-6);
 });
 
-// 같은 방향으로 1px씩 n번 천천히 움직였을 때의 결과
-const stroke = (target, n, step, L, side) => {
-  for (let i = 1; i <= n; i++) target = slideTarget(target, step, 100, i, L, N, side);
-  return target;
-};
+test('옆면 따라가기: 보통 빠르기면 손가락 아래 쪽을 그대로 따라간다', () => {
+  const k = G.EDGE_SPAN / N;
+  assert.equal(followEdge(0, 30, 0.5, k), 0);        // 차이 없으면 그대로
+  assert.equal(followEdge(0, -30, G.FINE_FAST, k), 0);
+  // 미세 조정으로 생긴 차이는 ATTACH_PX만큼 움직이면 1/e로 줄어 손가락 아래로 돌아온다
+  assert.ok(Math.abs(followEdge(100, G.ATTACH_PX, 1, k) - 100 / Math.E) < 1e-9);
+  let off = 100; for (let i = 0; i < 60; i++) off = followEdge(off, 1, 1, k);
+  assert.ok(Math.abs(off) < 2);
+});
 
-test('가로 훑기: 움직이기 시작할 때는 FINE_PX마다 한 장, 오른쪽이 뒤쪽 쪽', () => {
-  for (const side of ['left', 'right']) {
-    const L = side === 'right' ? 0 : 2000;
-    assert.equal(slideTarget(1000, G.FINE_PX, 1000, G.FINE_PX / 2, L, N, side), 1002);
-    assert.equal(slideTarget(1000, -G.FINE_PX, 1000, G.FINE_PX / 2, L, N, side), 998);
-    const s = side === 'right' ? 1 : -1; // 펼친 면 반대쪽(바깥)으로
-    const a = stroke(1000, G.FINE_PX, s, L, side);
-    assert.ok(Math.abs(a - (1000 + 2 * s)) < 0.2, `${side} 처음 5px은 거의 한 장`);
+test('옆면 따라가기: 아주 천천히 움직이면 FINE_PX마다 한 장만 움직인다', () => {
+  const k = G.EDGE_SPAN / N;
+  for (const dx of [G.FINE_PX, -G.FINE_PX]) {
+    const off = followEdge(0, dx, G.FINE_SLOW, k);
+    assert.ok(Math.abs(dx / k + off - Math.sign(dx) * 2) < 1e-9); // 손가락 아래 변화 + 차이 변화 = 2쪽
   }
-});
-
-test('가로 훑기: 같은 방향으로 멀리 갈수록 가속, 끝에서는 옆면 실제 비율의 RAMP_MAX배', () => {
-  const first = stroke(1000, 50, 1, 0, 'right') - 1000;
-  const second = stroke(1000, 100, 1, 0, 'right') - 1000 - first;
-  assert.ok(second > 3 * first, '뒤 50px이 앞 50px보다 훨씬 많이');
-  const max = G.RAMP_MAX * N / G.EDGE_SPAN;
-  assert.ok(Math.abs(slideTarget(1000, 1, 100, 500, 0, N, 'right') - 1000 - max) < 1e-9);
-  assert.ok(stroke(1000, 100, 1, 0, 'right') - 1000 > 500, '100px(약 19mm) 쭉 그으면 수백 쪽');
-});
-
-test('가로 훑기: 펼친 면 쪽으로 빠르게 끌면 고정, 바깥쪽은 빨라도 반영', () => {
-  const at = (speed, dx = -10, side = 'right') => slideTarget(1000, dx, 10 / speed, 10, side === 'right' ? 0 : 2000, N, side);
-  assert.equal(at(G.FINE_FAST), 1000);
-  assert.equal(at(3), 1000);
-  assert.equal(at(3, 10, 'left'), 1000);
-  assert.ok(at(G.FINE_SLOW) < 1000);
-  assert.ok(at(3, 10) > 1000 && at(3, -10, 'left') < 1000);
-  let previous = -Infinity;
-  for (const speed of [.05, .1, .15, .2, .3, 1]) { assert.ok(at(speed) >= previous); previous = at(speed); }
-});
-
-test('가로 훑기: 시간 없는 이벤트와 옆면 범위 제한', () => {
-  assert.equal(slideTarget(1000, 0, 10, 0, 0, N, 'right'), 1000);
-  assert.equal(slideTarget(1000, 10, 0, 10, 0, N, 'right'), 1000);
-  assert.equal(slideTarget(1000, 10, -1, 10, 0, N, 'right'), 1000);
-  assert.equal(slideTarget(1000, -10000, 100000, 10000, 800, N, 'right'), 802);
-  assert.equal(slideTarget(1000, 10000, 100000, 10000, 800, N, 'right'), lastLeft(N));
-  assert.equal(slideTarget(500, -10000, 100000, 10000, 800, N, 'left'), 0);
-  assert.equal(slideTarget(500, 10000, 100000, 10000, 800, N, 'left'), 798);
+  assert.equal(fineWeight(0), 1);
+  assert.equal(fineWeight(G.FINE_SLOW), 1);
+  assert.equal(fineWeight(G.FINE_FAST), 0);
+  assert.ok(Math.abs(fineWeight((G.FINE_SLOW + G.FINE_FAST) / 2) - 0.5) < 1e-9);
 });
 
 test('펼칠 면: 목표 쪽이 보이고 넘기는 방향으로 한 장 이상 움직인다', () => {
