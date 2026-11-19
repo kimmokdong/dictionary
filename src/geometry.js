@@ -12,9 +12,12 @@ export const G = {
   SNAP_PX: 8,         // 색인 시작 위치로 맞추는 터치 거리(최대)
   SNAP_SHARE: 0.3,    // 구간이 얇으면 스냅 폭을 구간 폭의 이 비율까지로 줄여 구간 안쪽을 남긴다
   CHIP_W: 28, CHIP_PAD: 6, // 색인 탭 크기와 터치 여유
-  // 옆면 가로 훑기: 천천히 움직이면 FINE_PX마다 한 장, FINE_FAST(px/ms)보다 빠르면 고른 쪽을 고정한다(들어 올리는 동작).
+  // 옆면 가로 훑기: 같은 방향으로 이어 간 거리가 짧으면 FINE_PX마다 한 장, RAMP_PX까지 점점 빨라져
+  // 옆면 실제 비율(손가락 아래 종이)의 RAMP_MAX배가 된다. 방향을 바꾸면 다시 한 장씩부터.
+  FINE_PX: 5, RAMP_PX: 60, RAMP_MAX: 1.2,
+  // 펼친 면 쪽으로 FINE_FAST(px/ms)보다 빠르게 끌면 고른 쪽을 고정한다(들어 올리는 동작).
   // 기준(손가락 속도): 미세 조정 약 5~20mm/s ≈ 0.03~0.1px/ms, 넘기려고 끄는 동작 ≈ 0.5px/ms 이상. 실기기에서 다듬는다.
-  FINE_PX: 5, FINE_SLOW: 0.1, FINE_FAST: 0.3,
+  FINE_SLOW: 0.1, FINE_FAST: 0.3,
   FLIP_IN: 176,       // 옆면을 잡은 손가락이 펼친 면 안으로 이만큼 들어와야 넘김 시작(지면 폭의 약 1/3)
   FLICK_IN: 40,       // 그 전에 놓아도 이만큼 들어온 빠른 튕김이면 넘긴다
 };
@@ -23,12 +26,17 @@ export const G = {
 export const lastLeft = (N) => N - (N % 2);
 
 // 옆면을 잡은 채 가로로 움직인 거리(dx, 오른쪽이 +)와 시간(ms)으로 고를 쪽을 조정한다.
+// run: 같은 방향으로 이어 간 거리(이번 이동 포함). 길수록 한 px에 넘어가는 쪽 수가 커진다.
 // 오른쪽으로 가면 쪽 번호가 커진다(오른쪽 옆면은 바깥, 왼쪽 옆면은 펼친 곳 쪽). 소수 쪽을 보존해 작은 움직임도 누적한다.
-// 빠를수록 덜 반영해, 빠르게 끌어 넘길 때는 고른 쪽이 밀리지 않는다.
-export function slideTarget(target, dx, dt, L, N, side) {
+// 펼친 면 쪽으로 빠르게 끌면 덜 반영해, 끌어 넘길 때 고른 쪽이 밀리지 않는다.
+export function slideTarget(target, dx, dt, run, L, N, side) {
   if (dt <= 0) return target;
-  const weight = Math.min(1, Math.max(0, (G.FINE_FAST - Math.abs(dx) / dt) / (G.FINE_FAST - G.FINE_SLOW)));
-  const next = target + 2 * (dx / G.FINE_PX) * weight;
+  const u = Math.min(1, Math.max(0, run - Math.abs(dx) / 2) / G.RAMP_PX); // 이번 이동의 가운데 지점 기준
+  const fine = 2 / G.FINE_PX, max = G.RAMP_MAX * N / G.EDGE_SPAN;
+  const perPx = fine + (max - fine) * u * u;
+  const toward = side === 'right' ? dx < 0 : dx > 0;
+  const weight = !toward ? 1 : Math.min(1, Math.max(0, (G.FINE_FAST - Math.abs(dx) / dt) / (G.FINE_FAST - G.FINE_SLOW)));
+  const next = target + dx * perPx * weight;
   return side === 'right' ? Math.min(lastLeft(N), Math.max(L + 2, next)) : Math.max(0, Math.min(L - 2, next));
 }
 

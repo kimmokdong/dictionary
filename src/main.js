@@ -439,7 +439,7 @@ stage.addEventListener('pointerdown', (e) => {
   if (hit.kind === 'none' && !page) return;
   stage.setPointerCapture(e.pointerId);
   press = { id: e.pointerId, hit, page, target: hit.target, riffle: hit.target, x0: x, y0: y, t0: e.timeStamp,
-    moved: 0, started: false, lastX: x, lastY: y, lastT: e.timeStamp, vx: 0 };
+    moved: 0, started: false, dir: 0, anchor: x, lastX: x, lastY: y, lastT: e.timeStamp, vx: 0 };
   if (hit.kind !== 'none') { prefetch(hit.target, hit.target + 1); showHint(x, y); }
   drawEdges(L);
 });
@@ -457,7 +457,12 @@ stage.addEventListener('pointermove', (e) => {
     // 옆면 묶음: 천천히 가로로 움직이면 한 장씩 고르고, 펼친 면 안으로 FLIP_IN만큼 들어와야 넘김을 시작한다.
     // 색인 탭: 구간 첫 쪽으로 바로 가므로 지금처럼 조금만 당겨도 넘긴다.
     if (bundle && dt > 0) {
-      press.riffle = slideTarget(press.riffle, dx, dt, L, N, press.hit.side);
+      // 방향이 바뀐 곳부터 다시 잰다: 쭉 그으면 점점 빨라지고, 되돌아오면 다시 한 장씩.
+      const dir = Math.sign(dx);
+      if (dir && dir !== press.dir) { press.dir = dir; press.anchor = x - dx; }
+      // 펼친 면 안에서는 가속하지 않는다(천천히 끌어 넘길 때 고른 쪽이 크게 밀리지 않게).
+      const run = (right ? edge - x : x - edge) > G.EDGE_REACH ? Math.abs(dx) / 2 : Math.abs(x - press.anchor);
+      press.riffle = slideTarget(press.riffle, dx, dt, run, L, N, press.hit.side);
       const t = 2 * Math.round(press.riffle / 2);
       if (t !== press.target) { press.target = t; prefetch(t, t + 1); paperSound.tick(); }
     }
