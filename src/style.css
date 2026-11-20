@@ -237,3 +237,5 @@ button:disabled { cursor: wait; opacity: .6; }
 #gamePanel::after, #collectionPanel::after, #aboutPanel::after { right: 0; transform: rotate(24deg); }
 #wordNote::before, #gameNote::before, #gameGuide::before { left: calc(50% - 34px); transform: rotate(-4deg); }
 #gameNote:has(#gameResults:not([hidden])) { transform: rotate(-.3deg); }
+/* 패널·쪽지는 세로로만 스크롤한다. 테이프 장식이 1px쯤 삐져나와 가로 스크롤바가 생기는 것을 막는다. */
+#aboutPanel, #gamePanel, #gameNote, #collectionPanel, #wordNote, #wordContent, #gameResults { overflow-x: hidden; }
