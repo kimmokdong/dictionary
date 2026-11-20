@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-20T00:12:11.226Z",
+  "builtAt": "2026-11-20T01:30:29.334Z",
   "krdictTotal": 56555,
   "byGrade": {
     "1": {
@@ -106,13 +106,13 @@
   },
   "outputBytes": {
     "entries": 6719748,
-    "notes": 15152889,
+    "notes": 15739396,
     "normal": 6986385,
     "large": 7209451,
     "xlarge": 7411252
   },
   "notes": {
-    "entriesWithInfo": 22066,
-    "totalBytes": 15152889
+    "entriesWithInfo": 22067,
+    "totalBytes": 15739396
   }
 }

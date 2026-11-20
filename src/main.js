@@ -15,6 +15,7 @@ const $ = (id) => document.getElementById(id);
 const stage = $('stage'), canvas = $('edges'), ctx = canvas.getContext('2d');
 const slab = $('slab'), hint = $('hint'), debugEl = $('debug');
 const el = { underL: $('underL'), underR: $('underR') };
+const welcomeHtml = $('welcome').innerHTML;
 const slabShadow = $('slabShadow');
 const note = $('wordNote'), wordContent = $('wordContent'), about = $('aboutPanel'), aboutButton = $('aboutButton');
 const reader = $('reader'), band = $('band'), soundButton = $('sound');
@@ -68,7 +69,7 @@ function pageHtml(p) {
 }
 // 쪽 n의 내용을 container에 채운다. 아직 못 받은 쪽은 받는 대로 채운다.
 function fillInto(container, n, stillWanted) {
-  container.innerHTML = '';
+  container.innerHTML = n === 0 ? welcomeHtml : '';
   if (n < 1 || n > N) return;
   const c = loadChunk(chunkOf(n));
   const current = index;
@@ -78,7 +79,7 @@ function fillInto(container, n, stillWanted) {
 function fill(pageEl, n) {
   const content = pageEl.firstElementChild;
   pageEl.dataset.n = n;
-  if (n < 1 || n > N) { content.innerHTML = ''; return; }
+  if (n < 1 || n > N) { content.innerHTML = n === 0 ? welcomeHtml : ''; return; }
   const c = loadChunk(chunkOf(n));
   const current = index;
   const wanted = () => index === current && pageEl.dataset.n == n;
@@ -380,15 +381,35 @@ async function showWord(seq, page) {
   try {
     if (!noteChunks.has(c)) noteChunks.set(c, readJson(`data/build/notes/notes-${String(c).padStart(4, '0')}.json`)
       .catch((error) => { noteChunks.delete(c); throw error; }));
-    const [notes, entry] = await Promise.all([noteChunks.get(c), collection.entryAt(seq)]);
+    const [notes, entry, before, after] = await Promise.all([noteChunks.get(c), collection.entryAt(seq),
+      seq > 0 ? collection.entryAt(seq - 1) : null, seq + 1 < index.entryPage.length ? collection.entryAt(seq + 1) : null]);
     if (selected === selection) {
-      wordContent.innerHTML = entryHtml(notes.find((entry) => entry.seq === seq));
+      wordContent.innerHTML = entryHtml(notes.find((entry) => entry.seq === seq), { before, after });
       collection.select(entry);
     }
   } catch {
     if (selected === selection) wordContent.textContent = '낱말을 읽지 못했습니다. 닫고 다시 선택해 주세요.';
   }
 }
+async function openWord(entry) {
+  const left = spreadForEntry(index, entry.seq);
+  await Promise.all([left, left + 1].filter((n) => n >= 1 && n <= N).map((n) => loadChunk(chunkOf(n))));
+  closeNote(); L = left; showSpread(); status.textContent = '';
+  await showWord(entry.seq, index.entryPage[entry.seq] === left ? el.underL : el.underR);
+  $('collectWord').focus();
+}
+wordContent.addEventListener('click', async (event) => {
+  const link = event.target.closest('a[data-seq]');
+  if (!link) return;
+  event.preventDefault();
+  if (flip || press || changing || game.active) return;
+  const seq = Number(link.dataset.seq);
+  if (!Number.isInteger(seq) || seq < 0 || seq >= index.entryPage.length) return;
+  changing = true; setBandDisabled(true);
+  try { await openWord(await collection.entryAt(seq)); }
+  catch { status.textContent = '낱말 자리를 찾지 못했어요'; }
+  finally { changing = false; setBandDisabled(false); }
+});
 $('closeWord').addEventListener('click', () => { closeNote(); });
 aboutButton.addEventListener('click', () => {
   if (flip || press || changing) return;
@@ -587,13 +608,7 @@ collection = createCollection({
   closeOthers: () => {
     closeNote(); closeAbout(); $('gamePanel').hidden = true; $('gameButton').setAttribute('aria-expanded', 'false'); $('gameNote').hidden = true;
   },
-  open: async (entry) => {
-    const left = spreadForEntry(index, entry.seq);
-    await Promise.all([left, left + 1].filter((n) => n >= 1 && n <= N).map((n) => loadChunk(chunkOf(n))));
-    closeNote(); L = left; showSpread(); status.textContent = '';
-    await showWord(entry.seq, index.entryPage[entry.seq] === left ? el.underL : el.underR);
-    $('collectWord').focus();
-  },
+  open: openWord,
   debug: DEBUG,
 });
 game = createGames({

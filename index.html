@@ -11,8 +11,8 @@
     <button id="gameButton" type="button" aria-expanded="false" aria-controls="gamePanel"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M9 8h14c5 0 8 16 4 17-2 1-5-4-7-4h-8c-2 0-5 5-7 4C1 24 4 8 9 8Z" fill="currentColor"/><path d="M10 12v8m-4-4h8" stroke="var(--label-paper)" stroke-width="2.5"/><circle cx="23" cy="13" r="1.5" fill="var(--label-paper)"/><circle cx="26" cy="17" r="1.5" fill="var(--label-paper)"/></svg><span class="button-label">놀이</span></button>
     <button id="collectionButton" type="button" aria-expanded="false" aria-controls="collectionPanel"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M16 28V15M16 19C5 20 3 11 3 7c9-1 14 3 13 12Zm1-4C16 6 23 3 30 4c-1 8-5 12-13 11Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>도감</button>
     <div id="gameCard" hidden>
-      <div><strong id="gameWord"></strong><span id="gameSentence" hidden></span> <span id="gameNumber"></span><button id="gameHint" type="button" hidden>힌트</button> <b id="gameTime" role="timer"></b><button id="gameNext" type="button" hidden>다음 문제</button></div>
-      <div id="gameMeaning"></div>
+      <div class="game-prompt"><strong id="gameWord"></strong><span id="gameSentence" hidden></span> <span id="gameNumber"></span><button id="gameHint" type="button" hidden>힌트</button><button id="gameNext" type="button" hidden>다음 문제</button></div>
+      <div class="game-hud"><div id="gameMeaning"></div><div id="gameProgress" role="group" aria-label="문제 진행"></div><span id="gameTimer"><span class="time-track"><i id="gameTimeBar"></i></span><b id="gameTime" role="timer"></b></span><b id="gameScore" aria-live="polite"></b><span id="gameGain" aria-hidden="true"></span></div>
       <div id="gameGuide" hidden></div>
     </div>
     <div id="bandControls">
@@ -27,7 +27,7 @@
       <button id="aboutButton" type="button" aria-label="이 사전에 대하여" title="이 사전에 대하여" aria-expanded="false" aria-controls="aboutPanel"><svg aria-hidden="true" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"/><path d="M12 11a4 4 0 1 1 6 4c-2 1-2 2-2 4"/><circle cx="16" cy="24" r="1.5" fill="currentColor" stroke="none"/></svg></button>
     </div>
   </header>
-  <section id="gamePanel" data-ui aria-label="놀이와 세트 고르기" hidden></section>
+  <section id="gamePanel" data-ui aria-label="놀이와 모험 지도" hidden></section>
   <section id="collectionPanel" data-ui aria-label="낱말 도감" hidden></section>
   <div id="aboutPanel" data-ui hidden>
     <h2>이 사전에 대하여</h2>
@@ -58,5 +58,18 @@
   <pre id="debug" hidden></pre>
 </div>
 </div>
+<template id="welcome">
+  <section class="welcome">
+    <p class="welcome-label">국어사전 · 첫 펼침</p><h2>이렇게 써요</h2>
+    <ol>
+      <li><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M5 5h15l7 7v15H5V5Zm15 0v9h7M11 20h10m-4-4 4 4-4 4"/></svg><div><h3>① 한 장 넘기기</h3><p>종이 가장자리를 잡고 옆으로 끌어요.</p></div></li>
+      <li><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M5 5h20v20H5V5Zm4 4h18v18H9M3 14h15m-4-4 4 4-4 4"/></svg><div><h3>② 많이 넘기기</h3><p>책 옆면을 짚고 가로로 쓱 훑은 다음, 펼친 면 쪽으로 끌어요. 천천히 움직이면 한 장씩 골라요.</p></div></li>
+      <li><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M5 4h18v24H5V4Zm18 4h5v7h-5M9 11h9v8"/></svg><div><h3>③ 색인 탭</h3><p>자음 탭을 잡고 당기면 그 자음이 시작하는 곳이 펼쳐져요.</p></div></li>
+      <li><svg aria-hidden="true" viewBox="0 0 32 32"><path d="m16 3 4 8 9 1-7 7 2 10-8-5-8 5 2-10-7-7 9-1Z"/></svg><div><h3>④ 낱말 누르기</h3><p>표제어를 누르면 쪽지가 열려요. ☆을 누르면 도감에 담겨요.</p></div></li>
+    </ol>
+    <div class="welcome-play"><h3>놀이와 도감</h3><p>위쪽 '놀이'에서 세 가지 놀이를 하고, '도감'에서 모은 낱말을 볼 수 있어요.</p></div>
+    <p class="welcome-credit"><b>만든 이: 현승쌤</b> · 낱말 자료: 국립국어원 「한국어기초사전」(CC BY-SA 2.0 KR)</p>
+  </section>
+</template>
 <script type="module" src="src/main.js"></script>
 </html>

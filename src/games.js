@@ -27,6 +27,7 @@ export function createGames(options) {
   panel.addEventListener('click', async (e) => {
     if (!options.idle() || choosing) return;
     const data = e.target.closest('button')?.dataset;
+    if (data?.action === 'close') { closePicker(); button.focus(); return; }
     if (data?.action === 'games') chooseGame();
     else if (games[data?.game]) {
       choosing = true; current = games[data.game];

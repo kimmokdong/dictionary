@@ -1,3 +1,4 @@
+import { createHud, mapHtml, resultHeading, resultActions } from './game-ui.js';
 import { esc, isIt } from './word.js';
 
 const KEY = 'dictionary-openonce-v1';
@@ -28,6 +29,7 @@ export function resultPraise(records) {
 
 export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, position, changed, redraw, idle, closeAbout, collect, debug }) {
   const $ = (id) => document.getElementById(id);
+  const hud = createHud('openonce');
   const button = $('gameButton'), panel = $('gamePanel'), card = $('gameCard'), note = $('gameNote');
   const feedback = $('gameFeedback'), actions = $('gameFeedbackActions'), results = $('gameResults'), next = $('gameNext');
   let source, bests = {}, run = null, current, phase = 'idle', side = 'right', loading = false, pickNumber = 0;
@@ -37,6 +39,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   const finding = () => active() && ['guessing', 'checking'].includes(phase);
   function closePicker() { panel.hidden = true; button.setAttribute('aria-expanded', 'false'); }
   function stop() {
+    hud.stop();
     run = null; current = null; phase = 'idle'; closePicker();
     card.hidden = note.hidden = actions.hidden = next.hidden = true;
     button.querySelector('.button-label').textContent = '놀이'; highlight(null); changed(); redraw();
@@ -57,27 +60,24 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
     closeAbout(); highlight(null); note.hidden = true; loading = true;
     try {
       source ??= await readJson('data/build/games/open-once.json');
-      let html = '<button type="button" data-action="games">놀이 고르기</button><h2>한 번에 펼치기</h2><p>한 판 10문제 · 시간 제한 없음<br>한 번에 낱말의 자리를 짐작해 펼쳐요.</p>';
-      for (const level of ['쉬움', '어려움']) {
-        html += `<h3>${level} · ${level === '쉬움' ? '색인 사용' : '색인 없이'}</h3><div class="game-sets">` +
-          source.sets.filter((s) => s.level === level).map((s) => `<button type="button" data-set="${s.set}" class="${bests[s.set] === undefined ? '' : 'recorded'}">${s.set}세트${bests[s.set] === undefined ? '' : '<span class="record-stamp" aria-hidden="true">완</span>'}<small>${bests[s.set] === undefined ? '아직 기록이 없어요' : `최고 ${bests[s.set]}/100점`}</small></button>`).join('') + '</div>';
-      }
+      const html = mapHtml('openonce', '한 번에 펼치기', '한 판 10문제 · 시간 제한 없음<br>한 번에 낱말의 자리를 짐작해 펼쳐요.', source, bests);
       panel.innerHTML = html; panel.hidden = false; button.setAttribute('aria-expanded', 'true'); panel.querySelector('button').focus();
     } catch { fail(); }
     finally { loading = false; }
   }
   async function start(set) {
     if (!idle()) return;
-    stop(); run = { set, records: [] }; button.querySelector('.button-label').textContent = '그만하기'; changed(); redraw();
+    stop(); run = { set, records: [] }; hud.start(set.items.length); button.querySelector('.button-label').textContent = '그만하기'; changed(); redraw();
     await problem();
   }
   async function problem() {
     const session = run; phase = 'loading'; highlight(null); note.hidden = actions.hidden = next.hidden = true;
+    hud.update(run.records, run.records.reduce((sum, r) => sum + r.score, 0));
     current = { ...run.set.items[run.records.length] };
     card.hidden = false; $('gameWord').textContent = current.w;
     $('gameNumber').textContent = `${run.records.length + 1}/10`;
     $('gameMeaning').textContent = '한 번에 펼쳐 보세요'; $('gameMeaning').title = '';
-    $('gameTime').textContent = ''; $('gameTime').hidden = true; $('gameGuide').hidden = true;
+    $('gameTime').hidden = false; $('gameGuide').hidden = true;
     await open(null, () => run === session);
     if (run === session) phase = 'guessing';
   }
@@ -94,18 +94,19 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       bests[set.set] = total;
       try { localStorage.setItem(KEY, serializeBests(bests)); } catch { saved = false; }
     }
-    run = null; phase = 'results'; card.hidden = actions.hidden = next.hidden = true;
+    hud.stop(); run = null; phase = 'results'; card.hidden = actions.hidden = next.hidden = true;
     button.querySelector('.button-label').textContent = '놀이'; changed(); redraw(); feedback.hidden = true; results.hidden = false;
-    results.innerHTML = `<h2 tabindex="-1">${set.set}세트 · ${total}/100점</h2>` + (fresh ? '<p class="new-best">새 기록!</p>' : '') +
+    results.innerHTML = resultHeading('openonce', set.set, `${total}/100점`, total, fresh) +
       '<table><caption>문제별 펼치기 과정</caption><thead><tr><th scope="col">낱말</th><th scope="col">거리</th><th scope="col">점수</th></tr></thead><tbody>' +
       records.map((r) => `<tr><th scope="row">${esc(r.w)}</th><td>${r.distance}쪽</td><td>${r.score}점</td></tr>`).join('') +
       `</tbody></table><p>${resultPraise(records).join('<br>')}</p>` + (!saved ? '<p>이 브라우저에서는 기록을 저장할 수 없어요.</p>' : '') +
-      '<div class="game-actions"><button type="button" data-action="retry">다시 하기</button><button type="button" data-action="choose">다른 세트</button><button type="button" data-action="exit">사전으로</button></div>';
+      resultActions(source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
     position(note, side); note.hidden = false; results.querySelector('h2').focus(); note.scrollTop = 0;
     results.onclick = (e) => {
       const action = e.target.closest('button')?.dataset.action;
       if (!action || !idle()) return;
       if (action === 'retry') start(set).catch(fail);
+      else if (action === 'next-stage') start(source.sets[source.sets.findIndex((s) => s.set === set.set) + 1]).catch(fail);
       else { stop(); if (action === 'choose') choose(); else button.focus(); }
     };
   }
@@ -129,6 +130,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       const index = getIndex(), target = index.entryPage[current.seq], left = getLeft();
       current.distance = spreadDistance(target, left, index.pageCount); current.score = scoreForDistance(current.distance);
       run.records.push(current); side = target === left + 1 ? 'left' : 'right';
+      hud.update(run.records, run.records.reduce((sum, r) => sum + r.score, 0), null);
       showFeedback(`${feedbackText(target, left, index.pageCount)} · ${current.score}점`);
       if (current.distance === 0) collectFound();
       actions.innerHTML = '<button type="button" data-action="check">넘겨서 확인하기</button><button type="button" data-action="next">다음 문제</button>';

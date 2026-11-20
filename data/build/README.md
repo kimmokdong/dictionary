@@ -27,6 +27,7 @@ entries와 같은 순서로 500개씩. NNNN = floor(seq / 500). 조판에는 사
 - `senses[]`: 지면과 같은 뜻 순번 `n`(1부터), `sentences[]` 문장 최대 2개, `dialogue[]` 대화 1개의 발화별 원문
 - `phrases[]`: 같은 기초사전 ID의 관용구·속담 최대 5개. `type`, `w` 표현, `def` 첫 뜻풀이
 - `derived[]`: 파생어 표기 최대 5개
+- `related[]`: 비슷한말·반대말의 `type`, `w`, 수록된 경우 첫 표제어의 `seq`
 
 지면에 실린 예문은 제외한다. 빈 배열은 해당 정보가 없음을 뜻한다.
 report/summary.json의 `notes.entriesWithInfo`는 정보가 있는 항목 수, `notes.totalBytes`는 notes 전체 바이트 수다.

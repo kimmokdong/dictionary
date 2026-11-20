@@ -4,10 +4,15 @@ const values = (o, att) => al(o?.feat).filter((f) => f.att === att).map((f) => f
 const feat = (o, att) => values(o, att)[0];
 
 export function collectNotes(entries, rawEntries) {
+  const headwords = new Map();
+  const normalize = (w) => w.normalize('NFC').replace(/\s+/g, '');
+  for (const e of entries) if (!headwords.has(normalize(e.w))) headwords.set(normalize(e.w), e.seq);
   const selected = new Map(entries.map((e) => [e.id, e]));
   const notes = new Map(entries.map((e) => [e.id, {
     seq: e.seq, w: e.w, hn: e.hn, pos: e.pos, grade: e.grade,
     pronunciation: [], forms: [], senses: [], phrases: [], derived: [],
+    related: [...new Map(e.senses.flatMap((s) => s.rel ?? []).map((r) =>
+      [`${r.type}:${r.w}`, { ...r, seq: headwords.get(normalize(r.w)) }])).values()],
   }]));
   for (const raw of rawEntries) {
     const entry = selected.get(raw.val), note = notes.get(raw.val);
@@ -45,4 +50,4 @@ export function collectNotes(entries, rawEntries) {
 }
 
 export const hasNoteInfo = (note) => !!(note.origin || note.pronunciation.length || note.forms.length ||
-  note.senses.length || note.phrases.length || note.derived.length);
+  note.senses.length || note.phrases.length || note.derived.length || note.related?.length);

@@ -10,6 +10,19 @@ export function sortKey(word) {
   return word.normalize('NFC').replace(/[^가-힣]/g, '');
 }
 
+const CHO = [...'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'];
+const JUNG = [...'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ'];
+const JONG = ['', ...'ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ'];
+
+// 빈 종성 자리도 남겨야 '가게'가 '각'보다 먼저인 음절 순서를 설명할 수 있다.
+export function jamoSlots(word) {
+  return [...sortKey(word)].flatMap((ch) => {
+    const n = ch.charCodeAt(0) - 0xac00;
+    return [CHO[Math.floor(n / 588)], JUNG[Math.floor(n % 588 / 28)], JONG[n % 28]];
+  });
+}
+export const decompose = (word) => jamoSlots(word).filter(Boolean);
+
 function cmpStr(a, b) {
   return a < b ? -1 : a > b ? 1 : 0; // 한글 음절은 모두 BMP라 코드 단위 비교로 충분하다
 }

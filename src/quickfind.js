@@ -1,4 +1,5 @@
 import { esc, spreadForEntry, isIt } from './word.js';
+import { createHud, mapHtml, resultHeading, resultActions } from './game-ui.js';
 
 const LIMIT = 100000, KEY = 'dictionary-quickfind-v1';
 export function timerStage(elapsed) {
@@ -29,6 +30,7 @@ export function resultPraise(records) {
 
 export function createQuickFind({ readJson, getIndex, open, highlight, position, changed, redraw, idle, closeAbout, collect, debug }) {
   const $ = (id) => document.getElementById(id);
+  const hud = createHud('quickfind');
   const button = $('gameButton'), panel = $('gamePanel'), card = $('gameCard'), note = $('gameNote');
   const feedback = $('gameFeedback'), results = $('gameResults');
   let source, bests = {}, run = null, phase = 'idle', current, started = 0, offset = 0;
@@ -41,6 +43,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   function clearTimers() { clearInterval(clock); clearTimeout(nextTimer); clearTimeout(toastTimer); }
   function hideHint() { hintTab = -1; redraw(); }
   function stop() {
+    hud.stop();
     clearTimers(); run = null; phase = 'idle'; closePicker(); card.hidden = note.hidden = true;
     button.querySelector('.button-label').textContent = '놀이'; highlight(null); hideHint(); changed();
     $('gameNext').hidden = $('gameFeedbackActions').hidden = true;
@@ -51,13 +54,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     position(note, side); note.hidden = false;
   }
   function renderPicker() {
-    let html = '<button type="button" data-action="games">놀이 고르기</button><h2>낱말 빨리 찾기</h2><p>한 판 5문제 · 문제마다 100초<br>같은 세트 번호로 함께 찾아봐요.</p>';
-    for (const level of ['쉬움', '보통', '어려움']) {
-      html += `<h3>${level}</h3><div class="game-sets">` + source.sets.filter((s) => s.level === level).map((s) => {
-        const best = bests[s.set];
-        return `<button type="button" data-set="${s.set}" class="${best ? 'recorded' : ''}">${s.set}세트${best ? '<span class="record-stamp" aria-hidden="true">완</span>' : ''}<small>${best ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` : '아직 기록이 없어요'}</small></button>`;
-      }).join('') + '</div>';
-    }
+    const html = mapHtml('quickfind', '낱말 빨리 찾기', '한 판 5문제 · 문제마다 100초<br>같은 스테이지 번호로 함께 찾아봐요.', source, bests);
     panel.innerHTML = html; panel.hidden = false; button.setAttribute('aria-expanded', 'true');
     panel.querySelector('button')?.focus();
   }
@@ -71,11 +68,12 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   }
   async function start(set) {
     if (!idle()) return;
-    stop(); run = { set, records: [] }; button.querySelector('.button-label').textContent = '그만하기';
+    stop(); run = { set, records: [] }; hud.start(set.items.length); button.querySelector('.button-label').textContent = '그만하기';
     changed(); await problem();
   }
   async function problem() {
     const session = run; phase = 'loading'; highlight(null); note.hidden = true; hideHint();
+    hud.update(run.records, summarize(run.records).found);
     current = { ...run.set.items[run.records.length], wrong: 0, flips: 0, usedIndex: false };
     card.hidden = false; $('gameWord').textContent = current.w;
     $('gameMeaning').textContent = current.hint ?? ''; $('gameMeaning').title = current.hint ?? '';
@@ -90,7 +88,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   function tick() {
     if (!finding()) return;
     const elapsed = performance.now() - started + offset, timer = timerStage(elapsed);
-    $('gameTime').textContent = `${timer.remaining}초`;
+    hud.timer(elapsed);
     const index = getIndex(), page = index.entryPage[current.seq];
     hintTab = timer.tab ? index.sections.findIndex((s) => page >= s.start && page <= s.end) : -1;
     $('gameGuide').hidden = !timer.guide;
@@ -116,6 +114,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
       if (added && run === session && current === record && phase === 'feedback') feedback.textContent += ' · 도감에 담았어요';
     });
     run.records.push(record);
+    hud.update(run.records, summarize(run.records).found, null);
     nextTimer = setTimeout(() => {
       if (run !== session) return;
       if (run.records.length === run.set.items.length) result(); else problem().catch(fail);
@@ -130,21 +129,21 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
       bests[set.set] = summary;
       try { localStorage.setItem(KEY, serializeBests(bests)); } catch { saved = false; }
     }
-    run = null; phase = 'results'; card.hidden = true; button.querySelector('.button-label').textContent = '놀이'; changed();
+    hud.stop(); run = null; phase = 'results'; card.hidden = true; button.querySelector('.button-label').textContent = '놀이'; changed();
     feedback.hidden = true; results.hidden = false;
-    results.innerHTML = `<h2>${set.set}세트 · ${summary.found}/5 찾았어요</h2>` +
-      (fresh ? '<p class="new-best">새 기록!</p>' : '') +
+    results.innerHTML = resultHeading('quickfind', set.set, `${summary.found}/5 찾았어요`, summary, fresh) +
       `<table><caption>문제별 찾기 과정</caption><thead><tr><th scope="col">낱말</th><th scope="col">시간</th><th scope="col">오답</th><th scope="col">넘김</th><th scope="col">색인·옆면</th></tr></thead><tbody>` +
       records.map((r) => `<tr><th scope="row">${esc(r.w)}</th><td>${r.timeout ? '시간 초과' : `${(r.elapsedMs / 1000).toFixed(1)}초`}</td><td>${r.wrong}</td><td>${r.flips}</td><td>${r.usedIndex ? '사용' : '—'}</td></tr>`).join('') +
       `</tbody></table><p>${resultPraise(records).join('<br>')}</p>` +
       (!saved ? '<p>이 브라우저에서는 기록을 저장할 수 없어요.</p>' : '') +
-      '<div class="game-actions"><button type="button" data-action="retry">다시 하기</button><button type="button" data-action="choose">다른 세트</button><button type="button" data-action="exit">사전으로</button></div>';
+      resultActions(source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
     position(note, side); note.hidden = false;
     results.querySelector('button').focus();
     results.onclick = (e) => {
       const action = e.target.closest('button')?.dataset.action;
       if (!action || !idle()) return;
       if (action === 'retry') start(set).catch(fail);
+      else if (action === 'next-stage') start(source.sets[source.sets.findIndex((s) => s.set === set.set) + 1]).catch(fail);
       else { stop(); if (action === 'choose') choose(); else button.focus(); }
     };
   }
