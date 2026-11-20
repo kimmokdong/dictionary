@@ -8,8 +8,8 @@
 <div id="reader">
   <header id="band" data-ui>
     <h1>국어사전</h1>
-    <button id="gameButton" type="button" aria-expanded="false" aria-controls="gamePanel">놀이</button>
-    <button id="collectionButton" type="button" aria-expanded="false" aria-controls="collectionPanel">도감</button>
+    <button id="gameButton" type="button" aria-expanded="false" aria-controls="gamePanel"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M9 8h14c5 0 8 16 4 17-2 1-5-4-7-4h-8c-2 0-5 5-7 4C1 24 4 8 9 8Z" fill="currentColor"/><path d="M10 12v8m-4-4h8" stroke="var(--label-paper)" stroke-width="2.5"/><circle cx="23" cy="13" r="1.5" fill="var(--label-paper)"/><circle cx="26" cy="17" r="1.5" fill="var(--label-paper)"/></svg><span class="button-label">놀이</span></button>
+    <button id="collectionButton" type="button" aria-expanded="false" aria-controls="collectionPanel"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M16 28V15M16 19C5 20 3 11 3 7c9-1 14 3 13 12Zm1-4C16 6 23 3 30 4c-1 8-5 12-13 11Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>도감</button>
     <div id="gameCard" hidden>
       <div><strong id="gameWord"></strong><span id="gameSentence" hidden></span> <span id="gameNumber"></span><button id="gameHint" type="button" hidden>힌트</button> <b id="gameTime" role="timer"></b><button id="gameNext" type="button" hidden>다음 문제</button></div>
       <div id="gameMeaning"></div>
@@ -17,19 +17,20 @@
     </div>
     <div id="bandControls">
       <div id="sizeControls" role="group" aria-label="글씨 크기">
-        <span>글씨 크기</span>
-        <button type="button" data-size="normal" aria-pressed="false">보통</button>
-        <button type="button" data-size="large" aria-pressed="false">크게</button>
-        <button type="button" data-size="xlarge" aria-pressed="false">아주 크게</button>
+        <span aria-hidden="true">Aa</span>
+        <button type="button" data-size="normal" aria-label="보통" title="보통" aria-pressed="false"><span aria-hidden="true"></span></button>
+        <button type="button" data-size="large" aria-label="크게" title="크게" aria-pressed="false"><span aria-hidden="true"></span></button>
+        <button type="button" data-size="xlarge" aria-label="아주 크게" title="아주 크게" aria-pressed="false"><span aria-hidden="true"></span></button>
       </div>
-      <button id="sound" type="button" aria-pressed="true">소리 끄기</button>
-      <button id="fullscreen" type="button" aria-pressed="false">전체 화면 켜기</button>
-      <button id="aboutButton" type="button" aria-expanded="false" aria-controls="aboutPanel">이 사전에 대하여</button>
+      <button id="sound" type="button" aria-label="소리 끄기" title="소리 끄기" aria-pressed="true"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="m15 6-8 7H3v6h4l8 7Z" fill="currentColor"/><path class="sound-waves" d="M20 10q7 6 0 12m5-17q12 11 0 22"/><path class="sound-slash" d="m4 3 25 26"/></svg></button>
+      <button id="fullscreen" type="button" aria-label="전체 화면 켜기" title="전체 화면 켜기" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32"><path d="M12 4H4v8m16-8h8v8M4 20v8h8m16-8v8h-8"/></svg></button>
+      <button id="aboutButton" type="button" aria-label="이 사전에 대하여" title="이 사전에 대하여" aria-expanded="false" aria-controls="aboutPanel"><svg aria-hidden="true" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"/><path d="M12 11a4 4 0 1 1 6 4c-2 1-2 2-2 4"/><circle cx="16" cy="24" r="1.5" fill="currentColor" stroke="none"/></svg></button>
     </div>
   </header>
   <section id="gamePanel" data-ui aria-label="놀이와 세트 고르기" hidden></section>
   <section id="collectionPanel" data-ui aria-label="낱말 도감" hidden></section>
   <div id="aboutPanel" data-ui hidden>
+    <h2>이 사전에 대하여</h2>
     <p>국립국어원의 「국어 기초 어휘 선정 및 어휘 등급화 목록」(2024, 공공누리 제1유형)으로 낱말과 등급을 골랐습니다.</p>
     <p>뜻풀이·예문·품사·관련어는 국립국어원 「한국어기초사전」(2026-10-19 내려받기본, CC BY-SA 2.0 KR)에서 가져왔습니다.</p>
     <p>1~4등급 낱말 22,098개를 선별하고 가나다순으로 재배열했으며 어깨번호를 다시 매겼습니다. 초등학생에게 맞지 않는 뜻 일부를 뺐습니다. 남은 뜻풀이는 원문 그대로, 예문 일부는 초등학생 눈높이에 맞게 고쳐 썼습니다. 예문은 뜻마다 최대 1개이며, 원문과 수정본은 data/edits/에 보존합니다.</p>

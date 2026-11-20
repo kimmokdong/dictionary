@@ -2,11 +2,26 @@
 @font-face { font-family: Dict; font-weight: 700; src: url(../assets/fonts/Pretendard-Bold.woff2); }
 
 html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
-  background: #2b211c radial-gradient(ellipse at 50% 40%, #4a3a30, #1f1713 85%); }
+  background: repeating-linear-gradient(2deg, #3b1d0c18 0 1px, transparent 1px 5px, #f7d39514 5px 6px, transparent 6px 13px),
+    repeating-linear-gradient(0deg, transparent 0 116px, #3b1d0c45 117px, #f7d39526 119px, transparent 121px 240px),
+    radial-gradient(ellipse at 50% 30%, var(--wood-light), var(--wood) 85%); }
 
 /* 56px 도구 띠와 1366×768 책을 함께 확대·축소한다(main.js). */
 :root {
   --paper: #fbf7ea;
+  --wood: #754323;
+  --wood-light: #b67c48;
+  --leather: #4a281a;
+  --label-paper: #fff2d3;
+  --gold: #e8bd60;
+  --stamp: #b9382c;
+  --ink: #49301e;
+  --muted: #79664f;
+  --card-border: #cfad79;
+  --rule: #b99f7130;
+  --card-shadow: 1px 5px 7px #4b2a1640, 0 1px 2px #4b2a1626;
+  --card-lines: repeating-linear-gradient(0deg, transparent 0 27px, var(--rule) 27px 28px);
+  --tape: #efdaa3b8;
   /* 은은한 종이결: 한 번만 그려지는 고정 무늬 */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -18,8 +33,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: non
 #stage { position: absolute; left: 0; top: 56px; width: 1366px; height: 768px; }
 #cover, .page, #edges, #slab, #slabShadow { touch-action: none; }
 /* 표지: 지면보다 조금 크게 보이는 가죽 느낌의 판 */
-#cover { position: absolute; left: 0; top: 11px; width: 1366px; height: 747px; border-radius: 7px;
-  background: linear-gradient(#6b4330, #54321f 50%, #452818); box-shadow: 0 8px 18px #000a, inset 0 0 0 2px #7c5540, inset 0 0 14px #0006; }
+#cover { position: absolute; left: 0; top: 11px; width: 1366px; height: 747px; border-radius: 14px;
+  background: radial-gradient(ellipse at 30% 0, #bd8a5233, transparent 65%),
+    repeating-radial-gradient(ellipse at 0 0, #ffffff08 0 1px, #0000000a 1px 3px, transparent 3px 5px), var(--leather);
+  background-size: auto, 9px 7px, auto;
+  box-shadow: 0 8px 18px #24130ccc, inset 0 0 0 2px #986943, inset 0 0 0 5px #2d170f; }
+#cover::after { content: ''; position: absolute; inset: 5px; border: 1px dashed #d1ac76; border-radius: 10px; pointer-events: none; }
 #edges { position: absolute; left: 0; top: 0; pointer-events: none; }
 
 .page {
@@ -56,8 +75,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: non
   background: repeating-linear-gradient(90deg, #efe8d6 0 1px, #cfc6ae 1px 2px); }
 
 #hint { position: absolute; display: none; width: 180px; height: 90px; box-sizing: border-box; z-index: 4;
-  background: #fffbe9; border: 1px solid #b9a77c; border-radius: 6px; overflow: hidden;
-  box-shadow: 0 3px 9px #0005; pointer-events: none; }
+  background: var(--label-paper); border: 1px solid #8c8879; border-radius: 9px; overflow: hidden;
+  box-shadow: 0 0 0 2px #ded5bd, 0 0 0 3px #777266, 0 3px 7px #0004; pointer-events: none; }
 #hint canvas { display: block; }
 #hint > div { padding: 2px 6px; font-size: 12px; line-height: 16px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 #debug { position: absolute; left: 400px; top: 0; margin: 0; padding: 4px 8px; background: #000b; color: #9f9; font: 12px/1.4 monospace; pointer-events: none; }
@@ -70,100 +89,151 @@ button { font: inherit; cursor: pointer; }
 button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible, #wordContent:focus-visible { outline: 3px solid #557d85; outline-offset: 3px; }
 button:disabled { cursor: wait; opacity: .6; }
 #wordNote { top: 72px; width: 500px; max-height: 620px; box-sizing: border-box; padding: 30px 22px 22px;
-  display: flex; background: #fff5d9; border: 1px solid #dfd0ac; border-radius: 2px;
-  box-shadow: 2px 6px 15px #49351b40; transform: rotate(-.6deg); }
+  display: flex; transform: rotate(-.6deg); }
 #wordNote[data-side="right"] { transform: rotate(.6deg); }
-#closeWord { position: absolute; right: 6px; top: 3px; width: 40px; height: 38px; border: 0; background: transparent; color: #69543e; font-size: 30px; }
+#closeWord { position: absolute; right: 6px; top: 3px; width: 40px; height: 38px; border: 0; background: transparent; color: var(--ink); font-size: 30px; }
 #wordContent { overflow: auto; overscroll-behavior: contain; touch-action: pan-y; width: 100%; min-height: 0; font-size: 22px; line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
 #wordTitle { font-size: 32px; line-height: 1.25; margin: 0 30px 8px 0; }
 #wordTitle sup { font-size: .6em; }
-.word-meta { font-size: 16px; color: #76654f; margin: 0 0 20px; }
-.sense + .sense { border-top: 1px solid #dfd0ac; margin-top: 18px; padding-top: 10px; }
+.word-meta { font-size: 16px; color: var(--muted); margin: 0 0 20px; }
+.sense + .sense { border-top: 1px solid var(--rule); margin-top: 18px; padding-top: 10px; }
 .sense p { margin: 8px 0; white-space: pre-wrap; }
-.sense h3 { color: #8b6344; font-size: 19px; margin: 16px 0 8px; }
-.word-example, .word-dialogue { color: #655d50; font-size: 19px; white-space: pre-wrap; }
-.word-dialogue { border-left: 2px solid #d9c8a3; padding-left: 12px; }
-.word-dialogue span { font-size: 14px; border: 1px solid #c9b993; border-radius: 3px; padding: 0 3px; }
-.sense small { color: #76654f; font-size: 14px; }
+.sense h3 { color: var(--muted); font-size: 19px; margin: 16px 0 8px; }
+.word-example, .word-dialogue { color: var(--muted); font-size: 19px; white-space: pre-wrap; }
+.word-dialogue { border-left: 2px solid var(--card-border); padding-left: 12px; }
+.word-dialogue span { font-size: 14px; border: 1px solid var(--card-border); border-radius: 3px; padding: 0 3px; }
+.sense small { color: var(--muted); font-size: 14px; }
 #band { top: 0; left: 0; width: 1366px; height: 56px; box-sizing: border-box; padding: 4px 18px 4px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 7;
-  background: linear-gradient(#e8deca, #d8c9af); color: #4e3e2e; border-bottom: 1px solid #a99576; box-shadow: 0 2px 8px #1f160d40; }
-#band h1 { font-size: 23px; letter-spacing: 2px; margin: 0; white-space: nowrap; }
-#bandControls, #sizeControls { display: flex; align-items: center; gap: 8px; }
-#sizeControls { gap: 3px; margin-right: 10px; }
-#sizeControls > span { font-size: 15px; margin-right: 6px; }
-#band button { min-height: 48px; padding: 0 14px; border: 1px solid #bead91; border-radius: 6px; background: #f8f1e3; color: #594735; font-size: 16px; touch-action: manipulation; }
+  display: flex; align-items: center; gap: 12px; z-index: 7;
+  background: repeating-linear-gradient(1deg, #4a281a18 0 1px, transparent 1px 5px, #ffe2a614 5px 6px, transparent 6px 11px),
+    linear-gradient(var(--wood-light), var(--wood));
+  color: var(--ink); border-bottom: 1px solid #e4b977; border-radius: 0 0 7px 7px; box-shadow: 0 3px 6px #24130c80; }
+#band h1 { flex-shrink: 0; font-size: 29px; letter-spacing: 2px; margin: 0 8px 0 0; white-space: nowrap;
+  color: var(--gold); background: linear-gradient(#fff1ad 20%, var(--gold) 48%, #b97b29 52%, #f4d881 82%);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  /* 글자를 투명하게 칠하면 text-shadow가 금박 위로 비쳐 탁해지므로, 짙은 테두리는 drop-shadow로 준다(띠는 정적이라 성능 부담 없음). */
+  filter: drop-shadow(0 1px 0 #3b200f) drop-shadow(0 0 1.5px #3b200fe6); }
+#bandControls, #sizeControls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+#bandControls { margin-left: auto; padding-left: 14px; border-left: 1px solid #e4b977; }
+#sizeControls { gap: 0; padding: 0 8px; height: 46px; box-sizing: border-box; }
+#sizeControls > span { font-size: 26px; font-weight: 700; margin: 0 6px 0 4px; padding-right: 10px; border-right: 1px solid var(--card-border); }
+#band button, #sizeControls { position: relative; border: 1px solid var(--card-border); border-radius: 8px;
+  background: linear-gradient(#fff9e9, var(--label-paper) 75%, #ead6ad); color: var(--ink);
+  box-shadow: inset 0 0 0 2px #fff8e5, 0 2px 2px #3b211999; }
+#band button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; flex-shrink: 0; min-height: 46px; padding: 0 16px; font-size: 22px; font-weight: 700; touch-action: manipulation; }
+#band button::before, #band button::after { content: ''; position: absolute; top: 5px; width: 3px; height: 3px; border-radius: 50%; background: var(--card-border); box-shadow: 0 1px #fff9; }
+#band button::before { left: 5px; }
+#band button::after { right: 5px; }
 #band button:hover { background: #fff9ec; }
-#band button[aria-pressed="true"] { background: #79634b; color: #fff8e9; border-color: #69543e; }
-#aboutPanel { top: 62px; right: 18px; z-index: 8; width: 360px; max-height: 620px; overflow: auto; box-sizing: border-box; padding: 18px;
-  background: #fff8e9; border: 1px solid #d3c3a7; border-radius: 7px; box-shadow: 0 5px 18px #21160c55;
+#band button:active, #band button[aria-expanded="true"] { box-shadow: inset 0 1px 4px #6b42234d; background: #efdfbc; }
+#band button[aria-pressed="true"] { color: var(--ink); border-color: #9c703e; }
+#band svg, .game-choices svg { width: 28px; height: 28px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+#band #gameButton, #band #collectionButton { padding: 0 14px; }
+#bandControls > button { width: 52px; padding: 0; }
+#band #sizeControls button { min-height: 40px; width: 32px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+#sizeControls button::before, #sizeControls button::after { display: none; }
+#sizeControls button span { width: 10px; height: 10px; border-radius: 50%; background: #ba8c51; box-shadow: inset 0 1px 2px #4a281a40; }
+#sizeControls [data-size="large"] span { width: 15px; height: 15px; }
+#sizeControls [data-size="xlarge"] span { width: 21px; height: 21px; }
+#sizeControls button[aria-pressed="true"] span { background: var(--ink); outline: 1px solid var(--ink); outline-offset: 3px; }
+#sound .sound-slash, #sound[aria-pressed="false"] .sound-waves { display: none; }
+#sound[aria-pressed="false"] .sound-slash { display: block; stroke: var(--stamp); stroke-width: 3; }
+#aboutPanel { top: 74px; right: 18px; z-index: 8; width: 390px; max-height: 680px; overflow: auto; box-sizing: border-box; padding: 34px 24px 20px;
   font-size: 16px; line-height: 1.55; touch-action: pan-y; overscroll-behavior: contain; }
-#aboutPanel p { margin: 10px 0; font-size: 14px; color: #655d50; }
-#aboutPanel a { color: #65503e; }
+#aboutPanel p { margin: 10px 0; font-size: 14px; color: var(--muted); }
+#aboutPanel a { color: var(--ink); }
 #status { position: absolute; z-index: 6; bottom: 20px; left: 50%; transform: translateX(-50%); max-width: 550px;
   background: #fff8e9; box-shadow: 0 2px 8px #0004; padding: 7px 14px; border-radius: 5px; font-size: 16px; pointer-events: none; }
 #status:empty { display: none; }
 
 /* 놀이도 책 위의 작은 카드와 쪽지 안에서 진행한다. */
 #gamePanel[hidden], #gameCard[hidden], #gameGuide[hidden], #gameNote[hidden], #gameResults[hidden], #gameFeedback[hidden], #gameFeedbackActions[hidden], #gameNext[hidden], #gameHint[hidden] { display: none; }
-#gameCard { flex: 1; min-width: 0; max-width: 360px; padding: 2px 10px; border-radius: 6px; background: #fff8e9; box-sizing: border-box; }
-#gameCard > div:first-child { display: flex; align-items: baseline; gap: 10px; }
-#gameWord { font-size: 22px; }
-#gameNumber { font-size: 14px; color: #76654f; }
+#gameCard { position: relative; flex: 1; min-width: 0; padding: 2px 12px; border: 1px solid var(--card-border); border-radius: 2px 2px 6px 2px;
+  background: linear-gradient(100deg, #fff9e9, var(--label-paper)); box-shadow: 1px 3px 2px #33201466; box-sizing: border-box; color: var(--ink); }
+#gameCard > div:first-child { display: flex; align-items: center; gap: 8px; min-height: 25px; }
+#gameWord { font-size: 28px; line-height: 29px; white-space: nowrap; }
+#gameNumber { font-size: 14px; color: var(--muted); }
 #gameTime { margin-left: auto; font-size: 19px; color: #496556; }
 #band #gameNext { min-height: 28px; padding: 0 8px; margin-left: auto; font-size: 13px; }
 #gameCard.baseform > div:first-child { align-items: center; gap: 6px; }
-#gameSentence { flex: 1; min-width: 0; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
+#gameSentence { flex: 1; min-width: 0; font-size: 16px; line-height: 20px; overflow-wrap: anywhere; }
 #gameCard.baseform #gameNumber { flex-shrink: 0; }
 #band #gameHint { flex-shrink: 0; min-height: 36px; padding: 0 6px; font-size: 13px; }
 #hint.picture-only { height: 52px; }
 #gameFeedbackActions { margin-top: 16px; }
 #gameMeaning { font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 #gameMeaning:empty { display: none; }
-#gameGuide { position: absolute; top: 58px; padding: 7px 12px; max-width: 430px; border: 1px solid #c5b48e; background: #fff5d9; box-shadow: 0 3px 8px #0003; font-size: 16px; border-radius: 5px; }
-#gamePanel { top: 62px; left: 122px; width: 490px; max-height: 700px; overflow: auto; padding: 20px; box-sizing: border-box;
-  background: #fff8e9; border: 1px solid #d3c3a7; border-radius: 7px; box-shadow: 0 5px 18px #21160c55; z-index: 8; touch-action: pan-y; }
-#gamePanel h2, #gameResults h2 { font-size: 24px; margin: 0 0 10px; }
-#gamePanel p { margin: 8px 0 14px; line-height: 1.5; color: #76654f; }
-#gamePanel h3 { font-size: 17px; margin: 14px 0 8px; color: #76654f; }
-.game-sets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.game-sets button, .game-actions button { min-height: 48px; padding: 9px 7px; color: #594735; background: #f3ead6; border: 1px solid #c5b48e; border-radius: 6px; touch-action: manipulation; }
-.game-sets button:hover, .game-actions button:hover { background: #e8dcbf; }
-.game-sets small { display: block; font-size: 11px; margin-top: 7px; }
+#gameGuide { position: absolute; top: 58px; left: 0; width: max-content; padding: 24px 14px 10px; max-width: 430px; font-size: 16px; }
+#gamePanel { top: 74px; left: 122px; width: 520px; max-height: 720px; overflow: auto; padding: 36px 24px 24px; box-sizing: border-box;
+  z-index: 8; touch-action: pan-y; }
+#gamePanel h2, #gameResults h2, #collectionPanel h2, #aboutPanel h2 { display: table; max-width: 100%; font-size: 32px; line-height: 1.3; margin: 0 0 14px;
+  background: linear-gradient(transparent 73%, #f5d557b8 73% 94%, transparent 94%); }
+#gamePanel p { margin: 8px 0 14px; line-height: 1.5; color: var(--muted); }
+#gamePanel h3 { font-size: 19px; margin: 16px 0 8px; color: var(--ink); }
+.game-sets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.game-sets button, .game-actions button, #gamePanel [data-action="games"], .collection-clear { position: relative; min-height: 48px; padding: 9px 10px; color: var(--ink);
+  background: linear-gradient(110deg, #fff9e9, var(--label-paper)); border: 1px solid var(--card-border); border-radius: 8px;
+  box-shadow: 0 3px 2px #6b422333, inset 0 0 0 2px #fffc; touch-action: manipulation; }
+.game-sets button:hover, .game-actions button:hover, #gamePanel [data-action="games"]:hover, .collection-clear:hover { background: #fffae9; border-color: #ac814b; }
+.game-sets button:active, .game-actions button:active, .collection-clear:active { transform: translateY(2px); box-shadow: inset 0 1px 3px #6b422333; }
+.game-sets button { min-height: 88px; font-size: 20px; font-weight: 700; text-align: left; }
+.game-sets small { display: block; font-size: 11px; font-weight: 400; line-height: 16px; margin-top: 12px; color: var(--muted); white-space: nowrap; }
+.game-sets .recorded { padding-right: 32px; }
+.game-sets .recorded small { margin-right: -22px; }
+.record-stamp { position: absolute; top: 10px; right: 5px; width: 24px; height: 24px; display: grid; place-items: center;
+  border: 3px double var(--stamp); border-radius: 50%; color: var(--stamp); font-size: 15px; line-height: 1; transform: rotate(-12deg); }
+#gamePanel [data-action="games"] { min-height: 30px; padding: 3px 12px; border-radius: 20px; font-size: 15px; margin-bottom: 10px; }
+.game-actions.game-choices { display: grid; gap: 16px; margin-top: 24px; }
+.game-choices button { display: flex; align-items: center; gap: 22px; min-height: 96px; padding: 18px 24px; font-size: 26px; font-weight: 700; text-align: left; }
+.game-choices svg { width: 36px; height: 36px; color: #98703e; }
 #gameNote { top: 72px; width: 500px; max-height: 620px; overflow: auto; box-sizing: border-box; padding: 24px;
-  background: #fff5d9; border: 1px solid #dfd0ac; border-radius: 3px; box-shadow: 2px 6px 15px #49351b40; touch-action: pan-y; }
+  padding-top: 34px; touch-action: pan-y; }
 #gameFeedback { font-size: 25px; margin: 0; line-height: 1.5; white-space: pre-line; }
 #gameResults { font-size: 18px; line-height: 1.6; }
 #gameResults table { width: 100%; border-collapse: collapse; font-size: 15px; }
-#gameResults caption { text-align: left; color: #76654f; font-size: 14px; }
-#gameResults th, #gameResults td { padding: 8px 3px; text-align: center; border-bottom: 1px solid #dfd0ac; }
-#gameResults .new-best { color: #496556; font-weight: 700; margin: 6px 0; }
+#gameResults caption { text-align: left; color: var(--muted); font-size: 14px; }
+#gameResults th, #gameResults td { padding: 8px 3px; text-align: center; border: 1px solid var(--rule); }
+#gameResults thead { background: #b99f7118; }
+#gameResults .new-best { display: grid; place-items: center; width: 74px; height: 74px; box-sizing: border-box; border: 4px double var(--stamp); border-radius: 50%;
+  color: var(--stamp); font-size: 17px; font-weight: 700; margin: 8px 0 16px; transform: rotate(-10deg); }
 .game-actions { display: flex; gap: 8px; }
 
 /* 색인과 같은 색의 칸에 붉은 도장을 찍는다. */
 #collectionPanel[hidden] { display: none; }
-#collectionPanel { top: 62px; left: 122px; width: 490px; max-height: 700px; overflow: auto; padding: 24px 20px 20px; box-sizing: border-box;
-  background: #fff8e9; border: 1px solid #d3c3a7; border-radius: 7px; box-shadow: 0 5px 18px #21160c55; z-index: 8; touch-action: pan-y; overscroll-behavior: contain; }
-#collectionPanel h2 { font-size: 24px; margin: 0 32px 18px 0; }
-#collectionPanel h3 { font-size: 18px; margin: 20px 0 10px; color: #76654f; }
-#collectWord, .collection-close { position: absolute; right: 46px; top: 3px; width: 44px; height: 38px; border: 0; background: transparent; color: #8b6344; font-size: 30px; touch-action: manipulation; }
-.collection-close { right: 6px; font-size: 28px; height: 44px; }
+#collectionPanel { top: 74px; left: 122px; width: 520px; max-height: 720px; overflow: auto; padding: 36px 24px 24px; box-sizing: border-box;
+  z-index: 8; touch-action: pan-y; overscroll-behavior: contain; }
+#collectionPanel h2 { font-size: 28px; margin-right: 20px; }
+#collectionPanel h3 { font-size: 18px; margin: 20px 0 10px; color: var(--muted); }
+#collectWord, .collection-close { position: absolute; right: 46px; top: 3px; width: 44px; height: 38px; border: 0; background: transparent; color: var(--ink); font-size: 30px; touch-action: manipulation; }
+.collection-close { right: 6px; font-size: 28px; height: 44px; z-index: 1; }
 .collection-tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-.collection-tabs button { position: relative; min-height: 72px; padding: 8px 0; border: 1px solid color-mix(in srgb, var(--tab-color) 55%, #fff8e9); border-radius: 5px;
-  background: color-mix(in srgb, var(--tab-color) 9%, #fff8e9); color: #564638; touch-action: manipulation; }
+.collection-tabs button { position: relative; min-height: 72px; padding: 8px 0; border: 1px solid color-mix(in srgb, var(--tab-color) 55%, #fff8e9); border-radius: 5px; box-shadow: 0 2px 2px #6b422326;
+  background: color-mix(in srgb, var(--tab-color) 9%, var(--label-paper)); color: var(--ink); touch-action: manipulation; }
 .collection-tabs b { display: block; font-size: 23px; }
 .collection-tabs small { display: block; font-size: 12px; margin-top: 6px; }
 .collection-tabs .empty { color: #968a79; border-style: dashed; }
 .collection-tabs .empty b { opacity: .5; }
-.collection-tabs .stamped::after { content: ''; position: absolute; width: 38px; height: 38px; top: 2px; left: 50%; border: 3px double #b63d32; border-radius: 47% 52% 45% 50%; transform: translateX(-50%) rotate(-13deg); pointer-events: none; }
-.collection-tabs .stamped b { color: #a8342e; transform: rotate(-10deg); }
+.collection-tabs .stamped::after { content: ''; position: absolute; width: 38px; height: 38px; top: 2px; left: 50%; border: 3px double var(--stamp); border-radius: 47% 52% 45% 50%; transform: translateX(-50%) rotate(-13deg); pointer-events: none; }
+.collection-tabs .stamped b { color: var(--stamp); transform: rotate(-10deg); }
 .collection-tabs button[aria-pressed="true"] { outline: 2px solid var(--tab-color); outline-offset: 1px; }
 .collection-words { list-style: none; padding: 0; margin: 0 0 18px; }
 .collection-words button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; min-height: 48px;
-  padding: 8px 10px; border: 0; border-bottom: 1px solid #dfd0ac; background: transparent; color: #594735; touch-action: manipulation; }
-.collection-words button:hover { background: #f3ead6; }
+  padding: 8px 10px; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink); touch-action: manipulation; }
+.collection-words button:hover { background: var(--label-paper); }
 .collection-words span { font-size: 21px; overflow-wrap: anywhere; }
-.collection-words small { font-size: 13px; color: #76654f; flex-shrink: 0; }
-.collection-empty, #collectionPanel p { color: #76654f; font-size: 15px; line-height: 1.5; }
-#collectionPanel .collection-complete { color: #a8342e; font-weight: 700; text-align: center; font-size: 20px; }
-.collection-clear { min-height: 44px; padding: 8px 14px; border: 1px solid #c5b48e; border-radius: 5px; background: #f3ead6; color: #594735; touch-action: manipulation; }
+.collection-words small { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.collection-empty, #collectionPanel p { color: var(--muted); font-size: 15px; line-height: 1.5; }
+#collectionPanel .collection-complete { color: var(--stamp); font-weight: 700; text-align: center; font-size: 20px; }
+
+/* 종이와 테이프는 고정된 UI에만 쓰고 넘김 조각에는 얹지 않는다. */
+#gamePanel, #collectionPanel, #aboutPanel, #wordNote, #gameNote, #gameGuide {
+  color: var(--ink); border: 1px solid var(--card-border); border-radius: 5px 5px 12px 5px;
+  background: var(--card-lines), var(--grain), linear-gradient(110deg, #fff9eb, #fcf1d7);
+  box-shadow: var(--card-shadow); }
+#gamePanel::before, #gamePanel::after, #collectionPanel::before, #collectionPanel::after, #aboutPanel::before, #aboutPanel::after,
+#wordNote::before, #gameNote::before, #gameGuide::before { content: ''; position: absolute; top: 7px; width: 68px; height: 19px;
+  background: var(--tape); border: 1px solid #fff5d54d; box-shadow: 0 1px 1px #6b42231a; pointer-events: none; }
+#gamePanel::before, #collectionPanel::before, #aboutPanel::before { left: 0; transform: rotate(-24deg); }
+#gamePanel::after, #collectionPanel::after, #aboutPanel::after { right: 0; transform: rotate(24deg); }
+#wordNote::before, #gameNote::before, #gameGuide::before { left: calc(50% - 34px); transform: rotate(-4deg); }
+#gameNote:has(#gameResults:not([hidden])) { transform: rotate(-.3deg); }

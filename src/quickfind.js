@@ -42,7 +42,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   function hideHint() { hintTab = -1; redraw(); }
   function stop() {
     clearTimers(); run = null; phase = 'idle'; closePicker(); card.hidden = note.hidden = true;
-    button.textContent = '놀이'; highlight(null); hideHint(); changed();
+    button.querySelector('.button-label').textContent = '놀이'; highlight(null); hideHint(); changed();
     $('gameNext').hidden = $('gameFeedbackActions').hidden = true;
   }
   function fail() { stop(); $('status').textContent = '놀이 자료를 읽지 못했습니다. 놀이 버튼으로 다시 시작해 주세요.'; }
@@ -55,7 +55,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     for (const level of ['쉬움', '보통', '어려움']) {
       html += `<h3>${level}</h3><div class="game-sets">` + source.sets.filter((s) => s.level === level).map((s) => {
         const best = bests[s.set];
-        return `<button type="button" data-set="${s.set}">${s.set}세트<small>${best ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` : '아직 기록이 없어요'}</small></button>`;
+        return `<button type="button" data-set="${s.set}" class="${best ? 'recorded' : ''}">${s.set}세트${best ? '<span class="record-stamp" aria-hidden="true">완</span>' : ''}<small>${best ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` : '아직 기록이 없어요'}</small></button>`;
       }).join('') + '</div>';
     }
     panel.innerHTML = html; panel.hidden = false; button.setAttribute('aria-expanded', 'true');
@@ -71,7 +71,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   }
   async function start(set) {
     if (!idle()) return;
-    stop(); run = { set, records: [] }; button.textContent = '그만하기';
+    stop(); run = { set, records: [] }; button.querySelector('.button-label').textContent = '그만하기';
     changed(); await problem();
   }
   async function problem() {
@@ -130,7 +130,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
       bests[set.set] = summary;
       try { localStorage.setItem(KEY, serializeBests(bests)); } catch { saved = false; }
     }
-    run = null; phase = 'results'; card.hidden = true; button.textContent = '놀이'; changed();
+    run = null; phase = 'results'; card.hidden = true; button.querySelector('.button-label').textContent = '놀이'; changed();
     feedback.hidden = true; results.hidden = false;
     results.innerHTML = `<h2>${set.set}세트 · ${summary.found}/5 찾았어요</h2>` +
       (fresh ? '<p class="new-best">새 기록!</p>' : '') +

@@ -46,7 +46,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
     clearTimeout(toastTimer); hideHint(); run = null; current = null; phase = 'idle'; closePicker();
     card.hidden = note.hidden = actions.hidden = $('gameNext').hidden = hint.hidden = $('gameSentence').hidden = true;
     card.classList.remove('baseform'); $('gameWord').hidden = false;
-    button.textContent = '놀이'; highlight(null); changed();
+    button.querySelector('.button-label').textContent = '놀이'; highlight(null); changed();
   }
   function fail() { stop(); $('status').textContent = '놀이 자료를 읽지 못했습니다. 놀이 버튼으로 다시 시작해 주세요.'; }
   function showFeedback(text) {
@@ -61,7 +61,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
       let html = '<button type="button" data-action="games">놀이 고르기</button><h2>기본형 탐정</h2><p>한 판 5문제 · 시간 제한 없음<br>굵은 낱말의 기본형을 사전에서 찾아요.</p>';
       for (const level of ['쉬움', '보통', '어려움']) {
         html += `<h3>${level}</h3><div class="game-sets">` + source.sets.filter((s) => s.level === level).map((s) =>
-          `<button type="button" data-set="${s.set}">${s.set}세트<small>${bests[s.set] ? `최고 ${bests[s.set].score}/15점` : '아직 기록이 없어요'}</small></button>`).join('') + '</div>';
+          `<button type="button" data-set="${s.set}" class="${bests[s.set] ? 'recorded' : ''}">${s.set}세트${bests[s.set] ? '<span class="record-stamp" aria-hidden="true">완</span>' : ''}<small>${bests[s.set] ? `최고 ${bests[s.set].score}/15점` : '아직 기록이 없어요'}</small></button>`).join('') + '</div>';
       }
       panel.innerHTML = html; panel.hidden = false; button.setAttribute('aria-expanded', 'true'); panel.querySelector('button').focus();
     } catch { fail(); }
@@ -69,7 +69,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
   }
   async function start(set) {
     if (!idle()) return;
-    stop(); run = { set, records: [] }; button.textContent = '그만하기'; changed();
+    stop(); run = { set, records: [] }; button.querySelector('.button-label').textContent = '그만하기'; changed();
     await problem();
   }
   async function problem() {
@@ -117,7 +117,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
       try { localStorage.setItem(KEY, serializeBests(bests)); } catch { saved = false; }
     }
     run = null; phase = 'results'; card.hidden = actions.hidden = true;
-    button.textContent = '놀이'; changed(); feedback.hidden = true; results.hidden = false;
+    button.querySelector('.button-label').textContent = '놀이'; changed(); feedback.hidden = true; results.hidden = false;
     results.innerHTML = `<h2 tabindex="-1">${set.set}세트 · ${summary.score}/15점</h2>` + (fresh ? '<p class="new-best">새 기록!</p>' : '') +
       '<table><caption>문제별 기본형 찾기 과정</caption><thead><tr><th scope="col">활용형 → 기본형</th><th scope="col">힌트</th><th scope="col">오답</th><th scope="col">넘김</th></tr></thead><tbody>' +
       records.map((r) => `<tr><th scope="row">${esc(r.form)} → ${esc(r.w)}${r.revealed ? '<br><small>정답 보기 · 0점</small>' : ''}</th><td>${r.hints}</td><td>${r.wrong}</td><td>${r.flips}</td></tr>`).join('') +

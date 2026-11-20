@@ -39,7 +39,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   function stop() {
     run = null; current = null; phase = 'idle'; closePicker();
     card.hidden = note.hidden = actions.hidden = next.hidden = true;
-    button.textContent = '놀이'; highlight(null); changed(); redraw();
+    button.querySelector('.button-label').textContent = '놀이'; highlight(null); changed(); redraw();
   }
   function fail() { stop(); $('status').textContent = '놀이 자료를 읽지 못했습니다. 놀이 버튼으로 다시 시작해 주세요.'; }
   function showFeedback(text) {
@@ -60,7 +60,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       let html = '<button type="button" data-action="games">놀이 고르기</button><h2>한 번에 펼치기</h2><p>한 판 10문제 · 시간 제한 없음<br>한 번에 낱말의 자리를 짐작해 펼쳐요.</p>';
       for (const level of ['쉬움', '어려움']) {
         html += `<h3>${level} · ${level === '쉬움' ? '색인 사용' : '색인 없이'}</h3><div class="game-sets">` +
-          source.sets.filter((s) => s.level === level).map((s) => `<button type="button" data-set="${s.set}">${s.set}세트<small>${bests[s.set] === undefined ? '아직 기록이 없어요' : `최고 ${bests[s.set]}/100점`}</small></button>`).join('') + '</div>';
+          source.sets.filter((s) => s.level === level).map((s) => `<button type="button" data-set="${s.set}" class="${bests[s.set] === undefined ? '' : 'recorded'}">${s.set}세트${bests[s.set] === undefined ? '' : '<span class="record-stamp" aria-hidden="true">완</span>'}<small>${bests[s.set] === undefined ? '아직 기록이 없어요' : `최고 ${bests[s.set]}/100점`}</small></button>`).join('') + '</div>';
       }
       panel.innerHTML = html; panel.hidden = false; button.setAttribute('aria-expanded', 'true'); panel.querySelector('button').focus();
     } catch { fail(); }
@@ -68,7 +68,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   }
   async function start(set) {
     if (!idle()) return;
-    stop(); run = { set, records: [] }; button.textContent = '그만하기'; changed(); redraw();
+    stop(); run = { set, records: [] }; button.querySelector('.button-label').textContent = '그만하기'; changed(); redraw();
     await problem();
   }
   async function problem() {
@@ -95,7 +95,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       try { localStorage.setItem(KEY, serializeBests(bests)); } catch { saved = false; }
     }
     run = null; phase = 'results'; card.hidden = actions.hidden = next.hidden = true;
-    button.textContent = '놀이'; changed(); redraw(); feedback.hidden = true; results.hidden = false;
+    button.querySelector('.button-label').textContent = '놀이'; changed(); redraw(); feedback.hidden = true; results.hidden = false;
     results.innerHTML = `<h2 tabindex="-1">${set.set}세트 · ${total}/100점</h2>` + (fresh ? '<p class="new-best">새 기록!</p>' : '') +
       '<table><caption>문제별 펼치기 과정</caption><thead><tr><th scope="col">낱말</th><th scope="col">거리</th><th scope="col">점수</th></tr></thead><tbody>' +
       records.map((r) => `<tr><th scope="row">${esc(r.w)}</th><td>${r.distance}쪽</td><td>${r.score}점</td></tr>`).join('') +

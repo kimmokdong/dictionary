@@ -414,7 +414,8 @@ function updateSizeButtons() {
 }
 updateSizeButtons();
 function updateSoundButton() {
-  soundButton.textContent = paperSound.enabled ? '소리 끄기' : '소리 켜기';
+  const label = paperSound.enabled ? '소리 끄기' : '소리 켜기';
+  soundButton.setAttribute('aria-label', label); soundButton.title = label;
   soundButton.setAttribute('aria-pressed', String(paperSound.enabled));
 }
 soundButton.addEventListener('click', () => {
@@ -431,7 +432,8 @@ fullscreen.addEventListener('click', async () => {
   } catch { status.textContent = '전체 화면으로 바꾸지 못했습니다. 브라우저 설정을 확인해 주세요.'; }
 });
 document.addEventListener('fullscreenchange', () => {
-  fullscreen.textContent = document.fullscreenElement ? '전체 화면 끄기' : '전체 화면 켜기'; fit();
+  const label = document.fullscreenElement ? '전체 화면 끄기' : '전체 화면 켜기';
+  fullscreen.setAttribute('aria-label', label); fullscreen.title = label; fit();
   fullscreen.setAttribute('aria-pressed', String(!!document.fullscreenElement));
 });
 document.addEventListener('keydown', (e) => {
