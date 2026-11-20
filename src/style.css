@@ -273,6 +273,9 @@ button:disabled { cursor: wait; opacity: .6; }
 .stage-sign small { font-size: 11px; }
 .stage-sign b { font-size: 27px; line-height: 31px; }
 .stage-path button:hover .stage-sign { background: #fff8df; border-color: #78532a; transform: translateY(-2px); }
+.random-path::before { display: none; }
+.random-path .stage-sign { width: 100%; height: auto; min-height: 48px; padding: 10px 6px; box-sizing: border-box; border-radius: 12px; font-size: 16px; font-weight: 700; }
+#gameResults .question-level { font-size: 11px; font-weight: 400; color: var(--muted); white-space: nowrap; }
 .stars { display: inline-flex; gap: 3px; font-size: 25px; line-height: 1.2; color: #9a8561; }
 .stars .earned { color: #b17b16; text-shadow: 0 1px #fff7d1; }
 .stage-record { color: var(--muted); font-size: 10px; white-space: nowrap; }

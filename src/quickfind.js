@@ -1,5 +1,6 @@
 import { esc, spreadForEntry, isIt } from './word.js';
-import { createHud, mapHtml, resultHeading, resultActions } from './game-ui.js';
+import { createHud, mapHtml, resultHeading, resultActions, setName } from './game-ui.js';
+import { randomSet } from './random.js';
 
 const LIMIT = 100000, KEY = 'dictionary-quickfind-v1';
 export function timerStage(elapsed) {
@@ -16,9 +17,9 @@ export const betterRecord = (next, previous) => !previous || next.found > previo
 export function parseBests(text) {
   try {
     const data = JSON.parse(text);
-    if (data?.version !== 1) return {};
-    return Object.fromEntries(Object.entries(data.sets ?? {}).filter(([set, r]) =>
-      /^(?:[1-9]|1[0-2])$/.test(set) && Number.isInteger(r?.found) && r.found >= 0 && r.found <= 5 &&
+    if (data?.version !== 1 || !data.sets || typeof data.sets !== 'object' || Array.isArray(data.sets)) return {};
+    return Object.fromEntries(Object.entries(data.sets).filter(([set, r]) =>
+      /^(?:[1-9]|1[0-2]|random)$/.test(set) && Number.isInteger(r?.found) && r.found >= 0 && r.found <= 5 &&
       Number.isFinite(r.totalMs) && r.totalMs >= 0 && r.totalMs <= 5 * LIMIT));
   } catch { return {}; }
 }
@@ -68,6 +69,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   }
   async function start(set) {
     if (!idle()) return;
+    if (set.set === 'random') set = randomSet(source, 'quickfind', set.set);
     stop(); run = { set, records: [] }; hud.start(set.items.length); button.querySelector('.button-label').textContent = '그만하기';
     changed(); await problem();
   }
@@ -77,7 +79,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     current = { ...run.set.items[run.records.length], wrong: 0, flips: 0, usedIndex: false };
     card.hidden = false; $('gameWord').textContent = current.w;
     $('gameMeaning').textContent = current.hint ?? ''; $('gameMeaning').title = current.hint ?? '';
-    $('gameNumber').textContent = `${run.records.length + 1}/5`;
+    $('gameNumber').textContent = `${setName('quickfind', run.set.set)} · ${run.records.length + 1}/5`;
     $('gameTime').hidden = false;
     $('gameTime').textContent = '100초'; $('gameGuide').hidden = true;
     await open(null, () => run === session);
@@ -133,10 +135,10 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
     feedback.hidden = true; results.hidden = false;
     results.innerHTML = resultHeading('quickfind', set.set, `${summary.found}/5 찾았어요`, summary, fresh) +
       `<table><caption>문제별 찾기 과정</caption><thead><tr><th scope="col">낱말</th><th scope="col">시간</th><th scope="col">오답</th><th scope="col">넘김</th><th scope="col">색인·옆면</th></tr></thead><tbody>` +
-      records.map((r) => `<tr><th scope="row">${esc(r.w)}</th><td>${r.timeout ? '시간 초과' : `${(r.elapsedMs / 1000).toFixed(1)}초`}</td><td>${r.wrong}</td><td>${r.flips}</td><td>${r.usedIndex ? '사용' : '—'}</td></tr>`).join('') +
+      records.map((r) => `<tr><th scope="row">${esc(r.w)}${r.level ? ` <small class="question-level">${esc(r.level)}</small>` : ''}</th><td>${r.timeout ? '시간 초과' : `${(r.elapsedMs / 1000).toFixed(1)}초`}</td><td>${r.wrong}</td><td>${r.flips}</td><td>${r.usedIndex ? '사용' : '—'}</td></tr>`).join('') +
       `</tbody></table><p>${resultPraise(records).join('<br>')}</p>` +
       (!saved ? '<p>이 브라우저에서는 기록을 저장할 수 없어요.</p>' : '') +
-      resultActions(source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
+      resultActions(typeof set.set === 'number' && source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
     position(note, side); note.hidden = false;
     results.querySelector('button').focus();
     results.onclick = (e) => {
@@ -149,7 +151,7 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
   }
   const api = {
     choose, stop,
-    startSet(number) { const set = source?.sets.find((s) => s.set === number); if (set) return start(set).catch(fail); },
+    startSet(number) { const set = number === 'random' ? { set: number } : source?.sets.find((s) => s.set === Number(number)); if (set) return start(set).catch(fail); },
     get active() { return active(); }, get finding() { return finding(); }, get tabHint() { return hintTab; },
     get tabs() { return true; }, get hideGuide() { return false; },
     flipped(completed, kind) {

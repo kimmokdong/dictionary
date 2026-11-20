@@ -33,7 +33,7 @@ export function createGames(options) {
       choosing = true; current = games[data.game];
       try { await current.choose(); } finally { choosing = false; }
     }
-    else if (data?.set) current?.startSet(Number(data.set));
+    else if (data?.set) current?.startSet(data.set);
   });
   document.addEventListener('pointerdown', (e) => {
     if (!panel.contains(e.target) && !button.contains(e.target)) closePicker();

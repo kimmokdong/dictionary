@@ -14,21 +14,29 @@ export function progressStates(total, outcomes, current) {
 const stars = (count, animated = false) => `<span class="stars${animated ? ' earned-stars' : ''}" role="img" aria-label="별 ${count}개">` +
   [0, 1, 2].map((i) => `<span class="${i < count ? 'earned' : ''}" style="--star-delay:${i * 170}ms">${i < count ? '★' : '☆'}</span>`).join('') + '</span>';
 
+export function setName(kind, set) {
+  if (set === 'random' || set === 'random-notab') return '무작위 도전' + (kind === 'openonce' ? ` · 색인 ${set === 'random' ? '사용' : '없이'}` : '');
+  return `스테이지 ${set}`;
+}
+
 export function mapHtml(kind, title, description, source, bests) {
+  const sign = (set, random = false) => {
+    const best = bests[set], count = starCount(kind, best);
+    const record = best === undefined ? '아직 기록이 없어요' : kind === 'quickfind' ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` :
+      `최고 ${kind === 'baseform' ? best.score : best}/${kind === 'baseform' ? 15 : 100}점`;
+    return `<button type="button" data-set="${set}"><span class="stage-sign">${random ? esc(setName(kind, set)) : `<small>스테이지</small><b>${set}</b>`}</span>${stars(count)}<small class="stage-record">${esc(record)}</small></button>`;
+  };
   return '<button type="button" class="collection-close" data-action="close" aria-label="지도 닫기">×</button>' +
     `<button type="button" data-action="games">놀이 고르기</button><p class="map-label">${title}</p><h2>모험 지도</h2><p>${description}</p>` +
     ['쉬움', '보통', '어려움'].filter((level) => source.sets.some((s) => s.level === level)).map((level) =>
       `<h3>${level}${kind === 'openonce' ? ` · ${level === '쉬움' ? '색인 사용' : '색인 없이'}` : ''}</h3><div class="stage-path">` +
-      source.sets.filter((s) => s.level === level).map((s) => {
-        const best = bests[s.set], count = starCount(kind, best);
-        const record = best === undefined ? '아직 기록이 없어요' : kind === 'quickfind' ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` :
-          `최고 ${kind === 'baseform' ? best.score : best}/${kind === 'baseform' ? 15 : 100}점`;
-        return `<button type="button" data-set="${s.set}"><span class="stage-sign"><small>스테이지</small><b>${s.set}</b></span>${stars(count)}<small class="stage-record">${esc(record)}</small></button>`;
-      }).join('') + '</div>').join('');
+      source.sets.filter((s) => s.level === level).map((s) => sign(s.set)).join('') + '</div>').join('') +
+    '<h3>무작위 도전</h3><div class="stage-path random-path">' +
+    (kind === 'openonce' ? ['random', 'random-notab'] : ['random']).map((key) => sign(key, true)).join('') + '</div>';
 }
 
 export function resultHeading(kind, set, text, record, fresh) {
-  return `<h2 tabindex="-1">스테이지 ${set} · ${text}</h2>${stars(starCount(kind, record), true)}` +
+  return `<h2 tabindex="-1">${setName(kind, set)} · ${text}</h2>${stars(starCount(kind, record), true)}` +
     (fresh ? '<p class="new-best">최고 기록 갱신!</p>' : '');
 }
 export function resultActions(hasNext) {

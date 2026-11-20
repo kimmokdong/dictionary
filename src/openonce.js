@@ -1,4 +1,5 @@
-import { createHud, mapHtml, resultHeading, resultActions } from './game-ui.js';
+import { createHud, mapHtml, resultHeading, resultActions, setName } from './game-ui.js';
+import { randomSet } from './random.js';
 import { esc, isIt } from './word.js';
 
 const KEY = 'dictionary-openonce-v1';
@@ -17,7 +18,7 @@ export function parseBests(text) {
     const data = JSON.parse(text);
     if (data?.version !== 1 || !data.sets || typeof data.sets !== 'object' || Array.isArray(data.sets)) return {};
     return Object.fromEntries(Object.entries(data.sets).filter(([set, score]) =>
-      /^[1-8]$/.test(set) && Number.isInteger(score) && score >= 0 && score <= 100));
+      /^(?:[1-8]|random|random-notab)$/.test(set) && Number.isInteger(score) && score >= 0 && score <= 100));
   } catch { return {}; }
 }
 export const serializeBests = (sets) => JSON.stringify({ version: 1, sets });
@@ -67,6 +68,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   }
   async function start(set) {
     if (!idle()) return;
+    if (set.set === 'random' || set.set === 'random-notab') set = randomSet(source, 'openonce', set.set);
     stop(); run = { set, records: [] }; hud.start(set.items.length); button.querySelector('.button-label').textContent = '그만하기'; changed(); redraw();
     await problem();
   }
@@ -75,7 +77,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
     hud.update(run.records, run.records.reduce((sum, r) => sum + r.score, 0));
     current = { ...run.set.items[run.records.length] };
     card.hidden = false; $('gameWord').textContent = current.w;
-    $('gameNumber').textContent = `${run.records.length + 1}/10`;
+    $('gameNumber').textContent = `${setName('openonce', run.set.set)} · ${run.records.length + 1}/10`;
     $('gameMeaning').textContent = '한 번에 펼쳐 보세요'; $('gameMeaning').title = '';
     $('gameTime').hidden = false; $('gameGuide').hidden = true;
     await open(null, () => run === session);
@@ -98,9 +100,9 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
     button.querySelector('.button-label').textContent = '놀이'; changed(); redraw(); feedback.hidden = true; results.hidden = false;
     results.innerHTML = resultHeading('openonce', set.set, `${total}/100점`, total, fresh) +
       '<table><caption>문제별 펼치기 과정</caption><thead><tr><th scope="col">낱말</th><th scope="col">거리</th><th scope="col">점수</th></tr></thead><tbody>' +
-      records.map((r) => `<tr><th scope="row">${esc(r.w)}</th><td>${r.distance}쪽</td><td>${r.score}점</td></tr>`).join('') +
+      records.map((r) => `<tr><th scope="row">${esc(r.w)}${r.level ? ` <small class="question-level">${esc(r.level)}</small>` : ''}</th><td>${r.distance}쪽</td><td>${r.score}점</td></tr>`).join('') +
       `</tbody></table><p>${resultPraise(records).join('<br>')}</p>` + (!saved ? '<p>이 브라우저에서는 기록을 저장할 수 없어요.</p>' : '') +
-      resultActions(source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
+      resultActions(typeof set.set === 'number' && source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
     position(note, side); note.hidden = false; results.querySelector('h2').focus(); note.scrollTop = 0;
     results.onclick = (e) => {
       const action = e.target.closest('button')?.dataset.action;
@@ -121,7 +123,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   next.addEventListener('click', advance);
   const api = {
     choose, stop,
-    startSet(number) { const set = source?.sets.find((s) => s.set === number); if (set) return start(set).catch(fail); },
+    startSet(number) { const set = ['random', 'random-notab'].includes(number) ? { set: number } : source?.sets.find((s) => s.set === Number(number)); if (set) return start(set).catch(fail); },
     get active() { return active(); }, get finding() { return finding(); }, get tabHint() { return -1; },
     get tabs() { return !active() || run.set.level !== '어려움'; }, get hideGuide() { return active(); },
     flipped(completed) {

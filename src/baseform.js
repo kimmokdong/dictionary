@@ -1,4 +1,5 @@
-import { createHud, mapHtml, resultHeading, resultActions } from './game-ui.js';
+import { createHud, mapHtml, resultHeading, resultActions, setName } from './game-ui.js';
+import { randomSet } from './random.js';
 import { esc, isIt } from './word.js';
 
 const KEY = 'dictionary-baseform-v1';
@@ -17,7 +18,7 @@ export function parseBests(text) {
     const data = JSON.parse(text);
     if (data?.version !== 1 || !data.sets || typeof data.sets !== 'object' || Array.isArray(data.sets)) return {};
     return Object.fromEntries(Object.entries(data.sets).filter(([set, r]) =>
-      /^[1-9]$/.test(set) && Number.isInteger(r?.score) && r.score >= 0 && r.score <= 15 &&
+      /^(?:[1-9]|random)$/.test(set) && Number.isInteger(r?.score) && r.score >= 0 && r.score <= 15 &&
       Array.isArray(r.records) && r.records.length === 5 && r.records.every((q) =>
         Number.isInteger(q?.hints) && q.hints >= 0 && q.hints <= 3 &&
         Number.isSafeInteger(q.wrong) && q.wrong >= 0 && Number.isSafeInteger(q.flips) && q.flips >= 0 &&
@@ -68,6 +69,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
   }
   async function start(set) {
     if (!idle()) return;
+    if (set.set === 'random') set = randomSet(source, 'baseform', set.set);
     stop(); run = { set, records: [] }; hud.start(set.items.length); button.querySelector('.button-label').textContent = '그만하기'; changed();
     await problem();
   }
@@ -80,7 +82,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
     $('gameWord').hidden = $('gameGuide').hidden = true; $('gameTime').hidden = false;
     const form = document.createElement('strong'); form.textContent = current.form;
     $('gameSentence').replaceChildren(document.createTextNode(current.before), form, document.createTextNode(current.after));
-    $('gameNumber').textContent = `${run.records.length + 1}/5`;
+    $('gameNumber').textContent = `${setName('baseform', run.set.set)} · ${run.records.length + 1}/5`;
     $('gameMeaning').textContent = ''; $('gameMeaning').title = ''; hint.textContent = '힌트'; hint.disabled = true;
     await open(null, () => run === session);
     if (run === session) { phase = 'finding'; hint.disabled = false; }
@@ -121,9 +123,9 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
     button.querySelector('.button-label').textContent = '놀이'; changed(); feedback.hidden = true; results.hidden = false;
     results.innerHTML = resultHeading('baseform', set.set, `${summary.score}/15점`, summary, fresh) +
       '<table><caption>문제별 기본형 찾기 과정</caption><thead><tr><th scope="col">활용형 → 기본형</th><th scope="col">힌트</th><th scope="col">오답</th><th scope="col">넘김</th></tr></thead><tbody>' +
-      records.map((r) => `<tr><th scope="row">${esc(r.form)} → ${esc(r.w)}${r.revealed ? '<br><small>정답 보기 · 0점</small>' : ''}</th><td>${r.hints}</td><td>${r.wrong}</td><td>${r.flips}</td></tr>`).join('') +
+      records.map((r) => `<tr><th scope="row">${esc(r.form)} → ${esc(r.w)}${r.level ? ` <small class="question-level">${esc(r.level)}</small>` : ''}${r.revealed ? '<br><small>정답 보기 · 0점</small>' : ''}</th><td>${r.hints}</td><td>${r.wrong}</td><td>${r.flips}</td></tr>`).join('') +
       `</tbody></table><p>${resultPraise(records).join('<br>')}</p>` + (!saved ? '<p>이 브라우저에서는 기록을 저장할 수 없어요.</p>' : '') +
-      resultActions(source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
+      resultActions(typeof set.set === 'number' && source.sets.findIndex((s) => s.set === set.set) < source.sets.length - 1);
     position(note, side); note.hidden = false; results.querySelector('h2').focus(); note.scrollTop = 0;
     results.onclick = (e) => {
       const action = e.target.closest('button')?.dataset.action;
@@ -147,7 +149,7 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
   actions.addEventListener('click', (e) => { if (e.target.closest('button')?.dataset.action === 'next') advance(); });
   const api = {
     choose, stop,
-    startSet(number) { const set = source?.sets.find((s) => s.set === number); if (set) return start(set).catch(fail); },
+    startSet(number) { const set = number === 'random' ? { set: number } : source?.sets.find((s) => s.set === Number(number)); if (set) return start(set).catch(fail); },
     get active() { return !!run; }, get finding() { return finding(); }, get tabHint() { return hintTab; },
     get tabs() { return true; }, get hideGuide() { return false; },
     flipped(completed) { if (finding() && completed) current.flips++; },
