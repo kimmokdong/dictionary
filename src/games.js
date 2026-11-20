@@ -1,16 +1,17 @@
 import { createQuickFind } from './quickfind.js';
 import { createOpenOnce } from './openonce.js';
+import { createBaseForm } from './baseform.js';
 
 // 놀이 선택과 사전 본체 사이의 연결은 여기서만 맡는다.
 export function createGames(options) {
   const button = document.getElementById('gameButton'), panel = document.getElementById('gamePanel');
-  const games = { quickfind: createQuickFind(options), openonce: createOpenOnce(options) };
+  const games = { quickfind: createQuickFind(options), openonce: createOpenOnce(options), baseform: createBaseForm(options) };
   let current, choosing = false;
   function closePicker() { panel.hidden = true; button.setAttribute('aria-expanded', 'false'); }
   function chooseGame() {
     current?.stop(); options.closeAbout(); options.highlight(null);
     document.getElementById('gameNote').hidden = true;
-    panel.innerHTML = '<h2>놀이 고르기</h2><div class="game-actions"><button type="button" data-game="quickfind">낱말 빨리 찾기</button><button type="button" data-game="openonce">한 번에 펼치기</button></div>';
+    panel.innerHTML = '<h2>놀이 고르기</h2><div class="game-actions"><button type="button" data-game="quickfind">낱말 빨리 찾기</button><button type="button" data-game="openonce">한 번에 펼치기</button><button type="button" data-game="baseform">기본형 탐정</button></div>';
     panel.hidden = false; button.setAttribute('aria-expanded', 'true'); panel.querySelector('button').focus();
   }
   button.addEventListener('click', () => {

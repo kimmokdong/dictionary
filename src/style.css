@@ -105,13 +105,17 @@ button:disabled { cursor: wait; opacity: .6; }
 #status:empty { display: none; }
 
 /* 놀이도 책 위의 작은 카드와 쪽지 안에서 진행한다. */
-#gamePanel[hidden], #gameCard[hidden], #gameGuide[hidden], #gameNote[hidden], #gameResults[hidden], #gameFeedback[hidden], #gameFeedbackActions[hidden], #gameNext[hidden] { display: none; }
+#gamePanel[hidden], #gameCard[hidden], #gameGuide[hidden], #gameNote[hidden], #gameResults[hidden], #gameFeedback[hidden], #gameFeedbackActions[hidden], #gameNext[hidden], #gameHint[hidden] { display: none; }
 #gameCard { flex: 1; min-width: 0; max-width: 360px; padding: 2px 10px; border-radius: 6px; background: #fff8e9; box-sizing: border-box; }
 #gameCard > div:first-child { display: flex; align-items: baseline; gap: 10px; }
 #gameWord { font-size: 22px; }
 #gameNumber { font-size: 14px; color: #76654f; }
 #gameTime { margin-left: auto; font-size: 19px; color: #496556; }
 #band #gameNext { min-height: 28px; padding: 0 8px; margin-left: auto; font-size: 13px; }
+#gameCard.baseform > div:first-child { align-items: center; gap: 6px; }
+#gameSentence { flex: 1; min-width: 0; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
+#gameCard.baseform #gameNumber { flex-shrink: 0; }
+#band #gameHint { flex-shrink: 0; min-height: 36px; padding: 0 6px; font-size: 13px; }
 #hint.picture-only { height: 52px; }
 #gameFeedbackActions { margin-top: 16px; }
 #gameMeaning { font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -128,7 +132,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .game-sets small { display: block; font-size: 11px; margin-top: 7px; }
 #gameNote { top: 72px; width: 500px; max-height: 620px; overflow: auto; box-sizing: border-box; padding: 24px;
   background: #fff5d9; border: 1px solid #dfd0ac; border-radius: 3px; box-shadow: 2px 6px 15px #49351b40; touch-action: pan-y; }
-#gameFeedback { font-size: 25px; margin: 0; line-height: 1.5; }
+#gameFeedback { font-size: 25px; margin: 0; line-height: 1.5; white-space: pre-line; }
 #gameResults { font-size: 18px; line-height: 1.6; }
 #gameResults table { width: 100%; border-collapse: collapse; font-size: 15px; }
 #gameResults caption { text-align: left; color: #76654f; font-size: 14px; }

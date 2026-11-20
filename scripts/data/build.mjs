@@ -19,7 +19,7 @@ const pad = (n) => String(n).padStart(4, '0');
 const label = (e) => e.w + (e.hn ? `(${e.hn})` : '');
 
 const { entries, notes, unmatched, stats, removedSenses, removedEntries, missingRemovals } = selectEntries(config);
-const games = [['quick-find', '낱말 빨리 찾기'], ['open-once', '한 번에 펼치기']].map(([file, name]) =>
+const games = [['quick-find', '낱말 빨리 찾기'], ['open-once', '한 번에 펼치기'], ['base-form', '기본형 탐정']].map(([file, name]) =>
   [file, linkGame(name, JSON.parse(fs.readFileSync(`data/games/${file}.json`, 'utf8')), entries)]);
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const [file, data] of games) write(`games/${file}.json`, data);
@@ -140,9 +140,11 @@ entries와 같은 순서로 ${config.entriesPerChunk}개씩. NNNN = floor(seq / 
 지면에 실린 예문은 제외한다. 빈 배열은 해당 정보가 없음을 뜻한다.
 report/summary.json의 \`notes.entriesWithInfo\`는 정보가 있는 항목 수, \`notes.totalBytes\`는 notes 전체 바이트 수다.
 
-## games/quick-find.json · games/open-once.json
-\`data/games/quick-find.json\`(낱말 빨리 찾기)과 \`data/games/open-once.json\`(한 번에 펼치기)의 문제 세트에 \`seq\`(entries 정렬 순번)를 추가한다.
+## games/quick-find.json · games/open-once.json · games/base-form.json
+\`data/games/quick-find.json\`(낱말 빨리 찾기), \`data/games/open-once.json\`(한 번에 펼치기), \`data/games/base-form.json\`(기본형 탐정)의 문제 세트에 \`seq\`(entries 정렬 순번)를 추가한다.
 한 번에 펼치기는 8세트·세트당 10문제이며 \`level\`은 쉬움(색인 사용) 또는 어려움(색인 없이)이다.
+기본형 탐정은 9세트·세트당 5문제이며 \`level\`은 쉬움(1~3), 보통(4~6), 어려움(7~9)이다.
+\`before\` + \`form\` + \`after\`가 문제 문장이고, \`form\`만 굵게 표시한다. \`w\`·\`id\`는 정답 표제어, \`tip\`은 정답 뒤 풀이이다.
 문제의 \`id\` 또는 \`w\`가 사전과 맞지 않으면 기존 빌드 결과를 지우기 전에 실패한다.
 원본 문제 파일은 수정하지 않는다.
 
