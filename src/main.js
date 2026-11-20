@@ -115,10 +115,20 @@ function drawEdges(pos) {
     ctx.fillStyle = shade; ctx.fillRect(Math.min(inner, outer), top, Math.abs(outer - inner), h);
     ctx.restore();
   }
-  // 책 아래쪽으로 보이는 종이 단면
-  ctx.fillStyle = '#e6dec9'; ctx.fillRect(lay.leftX0, top + h, lay.rightX1 - lay.leftX0, 5);
-  ctx.fillStyle = 'rgba(0,0,0,0.18)'; for (let y = top + h + 1; y < top + h + 5; y += 2) ctx.fillRect(lay.leftX0, y, lay.rightX1 - lay.leftX0, 1);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(lay.spine - 1, top + h, 2, 5);
+  // 책 아래쪽으로 보이는 종이 단면: 옆면 사다리꼴 아래 변을 따라 바깥쪽이 올라가게 그려 옆면과 틈이 없게 한다.
+  const bottom = top + h, rise = 7, cut = (dy) => {
+    ctx.beginPath();
+    ctx.moveTo(lay.leftX0, bottom - rise + dy); ctx.lineTo(lay.leftX1, bottom + dy);
+    ctx.lineTo(lay.rightX0, bottom + dy); ctx.lineTo(lay.rightX1, bottom - rise + dy);
+  };
+  ctx.save();
+  cut(0); ctx.lineTo(lay.rightX1, bottom - rise + 5); ctx.lineTo(lay.rightX0, bottom + 5);
+  ctx.lineTo(lay.leftX1, bottom + 5); ctx.lineTo(lay.leftX0, bottom - rise + 5); ctx.closePath();
+  ctx.fillStyle = '#e6dec9'; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
+  for (const dy of [1.5, 3.5]) { cut(dy); ctx.stroke(); }
+  ctx.restore();
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(lay.spine - 1, bottom, 2, 5);
   const tabs = game?.tabs !== false, chips = tabs ? tabChips(pos, sections, lay) : [];
   const rowH = h / sections.length;
   // 구간 띠: 실제 종이 분량만큼의 폭
