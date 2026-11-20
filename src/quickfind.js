@@ -27,7 +27,7 @@ export function resultPraise(records) {
     records.some((r) => r.wrong) ? '틀려도 끝까지 찾았어요.' : '다섯 낱말의 자리를 끝까지 살펴봤어요.'];
 }
 
-export function createQuickFind({ readJson, getIndex, open, highlight, position, changed, redraw, idle, closeAbout, debug }) {
+export function createQuickFind({ readJson, getIndex, open, highlight, position, changed, redraw, idle, closeAbout, collect, debug }) {
   const $ = (id) => document.getElementById(id);
   const button = $('gameButton'), panel = $('gamePanel'), card = $('gameCard'), note = $('gameNote');
   const feedback = $('gameFeedback'), results = $('gameResults');
@@ -112,6 +112,9 @@ export function createQuickFind({ readJson, getIndex, open, highlight, position,
       side = getIndex().entryPage[record.seq] % 2 ? 'left' : 'right';
     }
     highlight(record.seq); showFeedback(timeout ? '여기 있었어요' : '찾았어요! 낱말의 자리를 잘 찾았어요.');
+    if (!timeout) collect(record, 'quickfind').then((added) => {
+      if (added && run === session && current === record && phase === 'feedback') feedback.textContent += ' · 도감에 담았어요';
+    });
     run.records.push(record);
     nextTimer = setTimeout(() => {
       if (run !== session) return;

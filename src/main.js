@@ -3,6 +3,7 @@ import { G, layout, xOfPage, pageAtX, targetLeft, tabChips, hitTest, lastLeft, f
 import { firstEntry, spreadForEntry, nearestEntry, esc, entryHtml } from './word.js';
 import { paperSound } from './sound.js';
 import { createGames } from './games.js';
+import { createCollection } from './collection.js';
 
 const SIZES = ['normal', 'large', 'xlarge'];
 let size = 'normal';
@@ -38,7 +39,7 @@ let L = Math.min(lastLeft(N), Math.max(0, Number(params.get('p')) || 0) & ~1); /
 let flip = null;   // 넘기는 중: { lo, hi, dir, phi, bend }
 let press = null;  // 누르는 중: { id, hit, target, x0, y0, started, ... }
 let changing = false, selected = null;
-let game;
+let game, collection;
 
 // ---------- 쪽 내용 ----------
 let chunks = new Map();
@@ -333,12 +334,13 @@ function endPress() { press = null; hint.style.display = 'none'; }
 // ---------- 낱말 쪽지와 위쪽 도구 띠 ----------
 function closeNote() {
   selected = null; note.hidden = true;
+  collection?.select(null);
   stage.querySelectorAll('.word-selected').forEach((line) => line.classList.remove('word-selected'));
 }
 function closeAbout() { about.hidden = true; aboutButton.setAttribute('aria-expanded', 'false'); }
 function setBandDisabled(disabled) {
   band.querySelectorAll('button').forEach((button) => { button.disabled = disabled ||
-    (game?.active && !!button.dataset.size) || (button.id === 'fullscreen' && !document.fullscreenEnabled); });
+    (game?.active && (!!button.dataset.size || button.id === 'collectionButton')) || (button.id === 'fullscreen' && !document.fullscreenEnabled); });
 }
 function pageAt(x, y) {
   if (y < G.TOP || y > G.TOP + G.PAGE_H) return null;
@@ -354,7 +356,11 @@ async function selectWord(page, y) {
   const seq = nearestEntry(lines, y);
   if (seq === null) return;
   if (game.active) { await game.pick(seq, page === el.underL ? 'left' : 'right'); return; }
+  await showWord(seq, page);
+}
+async function showWord(seq, page) {
   const selection = selected = { seq };
+  collection.select(null);
   for (const p of Object.values(el)) p.querySelectorAll('.line').forEach((line) => line.classList.toggle('word-selected', Number(line.dataset.e) === seq));
   const lay = layout(L, N);
   note.style.left = (page === el.underL ? lay.spine : lay.leftX1) + (G.PAGE_W - 500) / 2 + 'px';
@@ -364,8 +370,11 @@ async function selectWord(page, y) {
   try {
     if (!noteChunks.has(c)) noteChunks.set(c, readJson(`data/build/notes/notes-${String(c).padStart(4, '0')}.json`)
       .catch((error) => { noteChunks.delete(c); throw error; }));
-    const notes = await noteChunks.get(c);
-    if (selected === selection) wordContent.innerHTML = entryHtml(notes.find((entry) => entry.seq === seq));
+    const [notes, entry] = await Promise.all([noteChunks.get(c), collection.entryAt(seq)]);
+    if (selected === selection) {
+      wordContent.innerHTML = entryHtml(notes.find((entry) => entry.seq === seq));
+      collection.select(entry);
+    }
   } catch {
     if (selected === selection) wordContent.textContent = '낱말을 읽지 못했습니다. 닫고 다시 선택해 주세요.';
   }
@@ -373,6 +382,7 @@ async function selectWord(page, y) {
 $('closeWord').addEventListener('click', () => { closeNote(); });
 aboutButton.addEventListener('click', () => {
   if (flip || press || changing) return;
+  collection.close();
   closeNote(); about.hidden = !about.hidden;
   aboutButton.setAttribute('aria-expanded', String(!about.hidden));
 });
@@ -380,7 +390,7 @@ sizeControls.addEventListener('click', async (e) => {
   const nextSize = e.target.closest('button')?.dataset.size;
   if (flip || press || changing || game.active || !SIZES.includes(nextSize) || nextSize === size) return;
   const seq = firstEntry(index, L);
-  changing = true; setBandDisabled(true); closeNote(); closeAbout();
+  changing = true; setBandDisabled(true); closeNote(); closeAbout(); collection.close();
   status.textContent = '글씨 크기를 바꾸고 있어요…';
   try {
     const data = `data/build/${nextSize}/`, nextIndex = await readJson(data + 'index.json');
@@ -559,8 +569,24 @@ if (DEBUG) {
     get N() { return N; }, get sections() { return sections; }, get size() { return size; } };
 }
 
+collection = createCollection({
+  readJson, getIndex: () => index, idle: () => !flip && !press && !changing && !game?.active,
+  busy: (value) => { changing = value; setBandDisabled(value); },
+  closeOthers: () => {
+    closeNote(); closeAbout(); $('gamePanel').hidden = true; $('gameButton').setAttribute('aria-expanded', 'false'); $('gameNote').hidden = true;
+  },
+  open: async (entry) => {
+    const left = spreadForEntry(index, entry.seq);
+    await Promise.all([left, left + 1].filter((n) => n >= 1 && n <= N).map((n) => loadChunk(chunkOf(n))));
+    closeNote(); L = left; showSpread(); status.textContent = '';
+    await showWord(entry.seq, index.entryPage[entry.seq] === left ? el.underL : el.underR);
+    $('collectWord').focus();
+  },
+  debug: DEBUG,
+});
 game = createGames({
   readJson, getIndex: () => index, getLeft: () => L, idle: () => !flip && !press && !changing, closeAbout,
+  collect: collection.collect, closeCollection: collection.close,
   changed: () => setBandDisabled(!!flip || changing),
   redraw: () => { if (!flip) drawEdges(L); },
   position: (element, side) => {

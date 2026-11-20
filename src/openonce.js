@@ -26,7 +26,7 @@ export function resultPraise(records) {
     '옆면의 두께와 낱말의 순서를 살펴봤어요.'];
 }
 
-export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, position, changed, redraw, idle, closeAbout, debug }) {
+export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, position, changed, redraw, idle, closeAbout, collect, debug }) {
   const $ = (id) => document.getElementById(id);
   const button = $('gameButton'), panel = $('gamePanel'), card = $('gameCard'), note = $('gameNote');
   const feedback = $('gameFeedback'), actions = $('gameFeedbackActions'), results = $('gameResults'), next = $('gameNext');
@@ -45,6 +45,12 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
   function showFeedback(text) {
     feedback.textContent = text; feedback.hidden = false; results.hidden = true;
     position(note, side); note.hidden = false;
+  }
+  function collectFound() {
+    const session = run, record = current, text = feedback.textContent;
+    collect(record, 'openonce').then((added) => {
+      if (added && run === session && current === record && feedback.textContent === text && !note.hidden) feedback.textContent += ' · 도감에 담았어요';
+    });
   }
   async function choose() {
     if (!idle() || loading) return;
@@ -124,6 +130,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       current.distance = spreadDistance(target, left, index.pageCount); current.score = scoreForDistance(current.distance);
       run.records.push(current); side = target === left + 1 ? 'left' : 'right';
       showFeedback(`${feedbackText(target, left, index.pageCount)} · ${current.score}점`);
+      if (current.distance === 0) collectFound();
       actions.innerHTML = '<button type="button" data-action="check">넘겨서 확인하기</button><button type="button" data-action="next">다음 문제</button>';
       actions.hidden = false; actions.querySelector('button').focus();
     },
@@ -131,7 +138,7 @@ export function createOpenOnce({ readJson, getIndex, getLeft, open, highlight, p
       if (phase !== 'checking' || !active()) return;
       const pick = ++pickNumber;
       side = pickedSide === 'left' ? 'right' : 'left';
-      if (seq === current.seq) { highlight(seq); showFeedback('여기 있어요!'); return; }
+      if (seq === current.seq) { highlight(seq); showFeedback('여기 있어요!'); collectFound(); return; }
       const record = current, c = Math.floor(seq / getIndex().entriesPerChunk);
       try {
         if (!entryChunks.has(c)) entryChunks.set(c, readJson(`data/build/entries/entries-${String(c).padStart(4, '0')}.json`)

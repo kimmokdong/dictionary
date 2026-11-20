@@ -9,6 +9,7 @@
   <header id="band" data-ui>
     <h1>국어사전</h1>
     <button id="gameButton" type="button" aria-expanded="false" aria-controls="gamePanel">놀이</button>
+    <button id="collectionButton" type="button" aria-expanded="false" aria-controls="collectionPanel">도감</button>
     <div id="gameCard" hidden>
       <div><strong id="gameWord"></strong><span id="gameSentence" hidden></span> <span id="gameNumber"></span><button id="gameHint" type="button" hidden>힌트</button> <b id="gameTime" role="timer"></b><button id="gameNext" type="button" hidden>다음 문제</button></div>
       <div id="gameMeaning"></div>
@@ -27,6 +28,7 @@
     </div>
   </header>
   <section id="gamePanel" data-ui aria-label="놀이와 세트 고르기" hidden></section>
+  <section id="collectionPanel" data-ui aria-label="낱말 도감" hidden></section>
   <div id="aboutPanel" data-ui hidden>
     <p>국립국어원의 「국어 기초 어휘 선정 및 어휘 등급화 목록」(2024, 공공누리 제1유형)으로 낱말과 등급을 골랐습니다.</p>
     <p>뜻풀이·예문·품사·관련어는 국립국어원 「한국어기초사전」(2026-10-19 내려받기본, CC BY-SA 2.0 KR)에서 가져왔습니다.</p>
@@ -42,6 +44,7 @@
   <div id="slab"></div>
   <div id="hint"></div>
   <aside id="wordNote" data-ui role="dialog" aria-label="낱말 더 알아보기" hidden>
+    <button id="collectWord" type="button" aria-pressed="false" aria-label="도감에 담기" disabled>☆</button>
     <button id="closeWord" type="button" aria-label="낱말 쪽지 닫기">×</button>
     <div id="wordContent" tabindex="0" aria-live="polite"></div>
   </aside>

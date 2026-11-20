@@ -31,7 +31,7 @@ export function resultPraise(records) {
     '모양이 바뀌는 낱말을 끝까지 추적했어요.'];
 }
 
-export function createBaseForm({ readJson, getIndex, open, highlight, position, changed, redraw, idle, closeAbout, debug }) {
+export function createBaseForm({ readJson, getIndex, open, highlight, position, changed, redraw, idle, closeAbout, collect, debug }) {
   const $ = (id) => document.getElementById(id);
   const button = $('gameButton'), panel = $('gamePanel'), card = $('gameCard'), note = $('gameNote');
   const feedback = $('gameFeedback'), actions = $('gameFeedbackActions'), results = $('gameResults'), hint = $('gameHint');
@@ -96,6 +96,9 @@ export function createBaseForm({ readJson, getIndex, open, highlight, position, 
     }
     phase = 'feedback'; highlight(record.seq);
     showFeedback(`${revealed ? '여기 있었어요!' : '찾았어요!'} ${record.form} → ${record.w}\n${record.tip}`);
+    if (!revealed) collect(record, 'baseform').then((added) => {
+      if (added && run === session && current === record && phase === 'feedback') feedback.textContent += ' · 도감에 담았어요';
+    });
     run.records.push(record);
     actions.innerHTML = '<button type="button" data-action="next">다음 문제</button>';
     actions.hidden = false; actions.querySelector('button').focus();

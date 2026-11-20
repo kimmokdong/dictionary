@@ -9,6 +9,7 @@ export function createGames(options) {
   let current, choosing = false;
   function closePicker() { panel.hidden = true; button.setAttribute('aria-expanded', 'false'); }
   function chooseGame() {
+    options.closeCollection();
     current?.stop(); options.closeAbout(); options.highlight(null);
     document.getElementById('gameNote').hidden = true;
     panel.innerHTML = '<h2>놀이 고르기</h2><div class="game-actions"><button type="button" data-game="quickfind">낱말 빨리 찾기</button><button type="button" data-game="openonce">한 번에 펼치기</button><button type="button" data-game="baseform">기본형 탐정</button></div>';
