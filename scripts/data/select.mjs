@@ -144,9 +144,9 @@ export function selectEntries(config) {
     const tab = tabIndex(e.w);
     if (tab < 0) { stats.skippedNonHangul++; continue; }
     // 원어가 있는데 고유어이거나, 원어가 없는데 한자어·외래어면 다른 동형어의 어종일 수 있어 비운다.
-    // 섞인 말(혼종어)인데 원어가 한자뿐이어도 마찬가지로 비운다.
+    // 섞인 말(혼종어)로 적혔어도 원어가 한자뿐이면 한자어다(어휘 목록의 입력 실수: 관리실·번식·부채).
     const mixedButHanja = e.kind === '혼종어' && /^[一-鿿/▽]+$/.test(e.origin);
-    const kind = !mixedButHanja && ((e.kind === '고유어') === !e.origin || !['고유어', '한자어', '외래어'].includes(e.kind)) ? e.kind : null;
+    const kind = mixedButHanja ? '한자어' : (e.kind === '고유어') === !e.origin || !['고유어', '한자어', '외래어'].includes(e.kind) ? e.kind : null;
     entries.push({ ...e, kind, key: sortKey(e.w), tab });
   }
   const result = finalizeEntries(entries);
