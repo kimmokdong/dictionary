@@ -9,7 +9,7 @@ export function collectNotes(entries, rawEntries) {
   for (const e of entries) if (!headwords.has(normalize(e.w))) headwords.set(normalize(e.w), e.seq);
   const selected = new Map(entries.map((e) => [e.id, e]));
   const notes = new Map(entries.map((e) => [e.id, {
-    seq: e.seq, w: e.w, hn: e.hn, pos: e.pos, grade: e.grade,
+    seq: e.seq, w: e.w, hn: e.hn, pos: e.pos, grade: e.grade, kind: e.kind ?? undefined,
     pronunciation: [], forms: [], senses: [], phrases: [], derived: [],
     related: [...new Map(e.senses.flatMap((s) => s.rel ?? []).map((r) =>
       [`${r.type}:${r.w}`, { ...r, seq: headwords.get(normalize(r.w)) }])).values()],

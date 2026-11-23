@@ -23,7 +23,7 @@ function loadVocab(grades) {
     if (!r[1] || !grades.includes(grade)) continue;
     // "동사형용사"는 구분 기호가 빠진 표기라 따로 푼다.
     const pos = norm(r[3]).replace('동사형용사', '동사/형용사').split('/').filter(Boolean);
-    out.push({ grade, word: norm(r[1]), pos, origin: norm(r[5]) });
+    out.push({ grade, word: norm(r[1]), pos, origin: norm(r[5]), kind: norm(r[4]) });
   }
   return out;
 }
@@ -128,9 +128,14 @@ export function selectEntries(config) {
     }
     g.matched++;
     for (const e of cand) {
-      const prev = picked.get(e.id);
-      if (prev) prev.grade = Math.min(prev.grade, row.grade);
-      else picked.set(e.id, { ...e, grade: row.grade });
+      const prev = picked.get(e.id), exact = row.origin === e.origin;
+      // 어종: 원어까지 같은 줄을 믿고, 원어로 못 가리는 줄끼리 어종이 다르면 비워 둔다.
+      if (!prev) picked.set(e.id, { ...e, grade: row.grade, kind: row.kind || null, kindExact: exact });
+      else {
+        prev.grade = Math.min(prev.grade, row.grade);
+        if (exact && !prev.kindExact) { prev.kind = row.kind || null; prev.kindExact = true; }
+        else if (!prev.kindExact && prev.kind !== row.kind) prev.kind = null;
+      }
     }
   }
 
@@ -138,12 +143,16 @@ export function selectEntries(config) {
   for (const e of picked.values()) {
     const tab = tabIndex(e.w);
     if (tab < 0) { stats.skippedNonHangul++; continue; }
-    entries.push({ ...e, key: sortKey(e.w), tab });
+    // 원어가 있는데 고유어이거나, 원어가 없는데 한자어·외래어면 다른 동형어의 어종일 수 있어 비운다.
+    const kind = (e.kind === '고유어') === !e.origin || !['고유어', '한자어', '외래어'].includes(e.kind) ? e.kind : null;
+    entries.push({ ...e, kind, key: sortKey(e.w), tab });
   }
   const result = finalizeEntries(entries);
   stats.sensesRemoved = result.removedSenses.size;
   stats.entriesRemoved = result.removedEntries.length;
   stats.removeMissing = result.missingRemovals.length;
   stats.entries = result.entries.length;
+  stats.byKind = {};
+  for (const e of result.entries) stats.byKind[e.kind ?? '없음'] = (stats.byKind[e.kind ?? '없음'] ?? 0) + 1;
   return { ...result, notes: collectNotes(result.entries, krdictEntries()), unmatched, stats };
 }

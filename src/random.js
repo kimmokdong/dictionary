@@ -10,5 +10,5 @@ export function pick(bank, n, random = Math.random) {
 
 export function randomSet(source, kind, key) {
   const bank = source.sets.flatMap((s) => s.items.map((item) => ({ ...item, level: s.level })));
-  return { set: key, level: key === 'random-notab' ? '어려움' : '쉬움', items: pick(bank, kind === 'openonce' ? 10 : 5) };
+  return { set: key, level: key === 'random-notab' ? '어려움' : '쉬움', items: pick(bank, { openonce: 10, wordkind: 8 }[kind] ?? 5) };
 }

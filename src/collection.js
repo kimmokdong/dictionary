@@ -3,7 +3,7 @@ import { esc } from './word.js';
 
 export { TABS, tabIndex };
 export const KEY = 'dictionary-collection-v1';
-const SOURCES = { star: '★', quickfind: '빨리 찾기', openonce: '한 번에 펼치기', baseform: '기본형 탐정' };
+const SOURCES = { star: '★', quickfind: '빨리 찾기', openonce: '한 번에 펼치기', baseform: '기본형 탐정', wordkind: '우리말 분류' };
 const object = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
 function validWord(id, word) {
   return /^\d+$/.test(id) && object(word) && typeof word.w === 'string' && tabIndex(word.w) >= 0 &&

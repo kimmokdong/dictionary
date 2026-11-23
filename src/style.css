@@ -325,3 +325,16 @@ button:disabled { cursor: wait; opacity: .6; }
 #gameResults > p { margin: 8px 0; }
 #gameResults .game-actions button { min-height: 44px; }
 @media (prefers-reduced-motion: reduce) { .earned-stars .earned { animation: none; } }
+/* 낱말 쪽지·우리말 분류: 어종 띠 */
+.word-kind { margin: -12px 0 18px; font-size: 17px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kind-badge { display: inline-block; padding: 2px 12px; border-radius: 999px; font-size: 15px; font-weight: 700; color: #fff; background: #6b5a45; }
+.kind-badge[data-kind="고유어"] { background: #3d7a4a; }
+.kind-badge[data-kind="한자어"] { background: #a8452f; }
+.kind-badge[data-kind="외래어"] { background: #2f6596; }
+.kind-badge[data-kind="혼종어"] { background: #7a4f8c; }
+.kind-origin { font-size: 17px; color: var(--ink); }
+.kind-rule { margin: 0 0 12px; font-size: 15px; color: var(--muted); }
+.kind-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.kind-choices button { min-height: 52px; font-size: 20px; font-weight: 700; }
+.kind-choices button[disabled] { opacity: .45; text-decoration: line-through; }
+#gameFeedbackActions:has(.kind-choices) { display: block; }

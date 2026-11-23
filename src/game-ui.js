@@ -4,7 +4,7 @@ export function starCount(kind, record) {
   if (record === undefined || record === null) return 0;
   if (kind === 'quickfind') return record.found === 5 ? (record.totalMs <= 200000 ? 3 : 2) : record.found >= 1 ? 1 : 0;
   const score = kind === 'baseform' ? record.score : record;
-  return (kind === 'baseform' ? [5, 10, 14] : [30, 60, 85]).filter((n) => score >= n).length;
+  return ({ baseform: [5, 10, 14], wordkind: [8, 12, 15] }[kind] ?? [30, 60, 85]).filter((n) => score >= n).length;
 }
 
 export function progressStates(total, outcomes, current) {
@@ -23,7 +23,7 @@ export function mapHtml(kind, title, description, source, bests) {
   const sign = (set, random = false) => {
     const best = bests[set], count = starCount(kind, best);
     const record = best === undefined ? '아직 기록이 없어요' : kind === 'quickfind' ? `최고 ${best.found}/5 · ${(best.totalMs / 1000).toFixed(1)}초` :
-      `최고 ${kind === 'baseform' ? best.score : best}/${kind === 'baseform' ? 15 : 100}점`;
+      `최고 ${kind === 'baseform' ? best.score : best}/${{ baseform: 15, wordkind: 16 }[kind] ?? 100}점`;
     return `<button type="button" data-set="${set}"><span class="stage-sign">${random ? esc(setName(kind, set)) : `<small>스테이지</small><b>${set}</b>`}</span>${stars(count)}<small class="stage-record">${esc(record)}</small></button>`;
   };
   return '<button type="button" class="collection-close" data-action="close" aria-label="지도 닫기">×</button>' +
@@ -64,7 +64,7 @@ export function createHud(kind) {
     },
     timer,
     update(records, nextScore, current = records.length) {
-      const outcomes = records.map((r) => kind === 'quickfind' ? !r.timeout : kind === 'baseform' ? !r.revealed : r.distance === 0);
+      const outcomes = records.map((r) => kind === 'quickfind' ? !r.timeout : kind === 'baseform' ? !r.revealed : kind === 'wordkind' ? r.correct && r.tries === 1 : r.distance === 0);
       const labels = { correct: '맞힘', missed: '놓침', current: '지금 문제', waiting: '다음 문제' };
       $('gameProgress').innerHTML = progressStates(total, outcomes, current).map((state, i) =>
         `<span class="progress-dot ${state}" role="img" aria-label="${i + 1}번 ${labels[state]}"${state === 'current' ? ' aria-current="step"' : ''}>${state === 'correct' ? '✓' : state === 'missed' ? '✗' : ''}</span>`).join('');

@@ -20,6 +20,7 @@ export function nearestEntry(lines, y) {
 export const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const hasBatchim = (w) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c < 11172 && c % 28 !== 0; };
 // 받침이 있으면 '이에요', 없으면 '예요'(한글 음절이 아니면 '예요').
+export const topic = (w) => `'${w}'${hasBatchim(w) ? '은' : '는'}`;
 export const isIt = (w) => `이건 '${w}'${hasBatchim(w) ? '이에요' : '예요'}`;
 
 // 자음 이름(기역·니은…)은 받침으로 끝나 '이', 모음 이름(아·오…)은 받침이 없어 '가'를 붙인다.
@@ -54,13 +55,18 @@ function orderHtml(entry, neighbors) {
   }).join('') + '</details>';
 }
 
+// 어종 띠: 고유어·한자어·외래어·혼종어와 원어. 어종을 모르면 띠 없이 원어만 따로 보인다.
+export const KIND_LABEL = { 고유어: '고유어 (순우리말)', 한자어: '한자어', 외래어: '외래어', 혼종어: '혼종어 (섞어 만든 말)' };
+export const kindHtml = (entry) => KIND_LABEL[entry.kind] ? `<p class="word-kind"><span class="kind-badge" data-kind="${entry.kind}">${KIND_LABEL[entry.kind]}</span>` +
+  (entry.origin ? ` <span class="kind-origin">원어 ${esc(entry.origin)}</span>` : '') + '</p>' : '';
+
 export function entryHtml(entry, neighbors) {
   const grades = ['학교 가기 전', '1~2학년', '3~4학년', '5~6학년'];
   const circled = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
   let info = '';
   if (entry.pronunciation.length) info += `<p>발음 <b>[${entry.pronunciation.map(esc).join(', ')}]</b></p>`;
   if (entry.forms.length) info += `<p>활용 · ${entry.forms.map((f) => esc(f.w) + (f.short.length ? `(${f.short.map(esc).join(', ')})` : '')).join(', ')}</p>`;
-  if (entry.origin) info += `<p>원어 · ${esc(entry.origin)}</p>`;
+  if (entry.origin && !entry.kind) info += `<p>원어 · ${esc(entry.origin)}</p>`;
   info += entry.senses.map((s) => `<section class="sense"><h3>${circled[s.n - 1] ?? `(${s.n})`} 예문</h3>` +
     s.sentences.map((x) => `<p class="word-example">${esc(x)}</p>`).join('') +
     (s.dialogue.length ? `<div class="word-dialogue">${s.dialogue.map((x, i) => `<p><span>${i % 2 ? '나' : '가'}</span> ${esc(x)}</p>`).join('')}</div>` : '') + '</section>').join('');
@@ -74,5 +80,6 @@ export function entryHtml(entry, neighbors) {
   if (entry.derived.length) info += `<section class="sense"><h3>파생어</h3><p>${entry.derived.map(esc).join(', ')}</p></section>`;
   return `<h2 id="wordTitle">${esc(entry.w)}${entry.hn ? `<sup>${entry.hn}</sup>` : ''}</h2>` +
     `<p class="word-meta">${esc(entry.pos)} · ${grades[entry.grade - 1]}</p>` +
+    kindHtml(entry) +
     (neighbors ? orderHtml(entry, neighbors) : '') + (info || '<p>이 낱말은 지면에 실린 내용이 전부예요.</p>');
 }
