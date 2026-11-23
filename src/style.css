@@ -326,7 +326,9 @@ button:disabled { cursor: wait; opacity: .6; }
 #gameResults .game-actions button { min-height: 44px; }
 @media (prefers-reduced-motion: reduce) { .earned-stars .earned { animation: none; } }
 /* 낱말 쪽지·우리말 분류: 어종 띠 */
-.word-kind { margin: -12px 0 18px; font-size: 17px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.word-kind { margin: -12px 0 18px; }
+.word-kind > p:first-child { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kind-note { margin: 6px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
 .kind-badge { display: inline-block; padding: 2px 12px; border-radius: 999px; font-size: 15px; font-weight: 700; color: #fff; background: #6b5a45; }
 .kind-badge[data-kind="고유어"] { background: #3d7a4a; }
 .kind-badge[data-kind="한자어"] { background: #a8452f; }

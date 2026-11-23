@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-23T01:27:36.408Z",
+  "builtAt": "2026-11-23T01:41:54.257Z",
   "krdictTotal": 56555,
   "byGrade": {
     "1": {
@@ -30,9 +30,9 @@
   "byKind": {
     "고유어": 8209,
     "한자어": 9067,
-    "혼종어": 3936,
+    "혼종어": 3933,
     "외래어": 855,
-    "없음": 22
+    "없음": 25
   },
   "examplesEdited": 5876,
   "examplesEditSkipped": 0,
@@ -113,13 +113,13 @@
   },
   "outputBytes": {
     "entries": 6719748,
-    "notes": 16158669,
+    "notes": 16158612,
     "normal": 6986385,
     "large": 7209451,
     "xlarge": 7411252
   },
   "notes": {
     "entriesWithInfo": 22067,
-    "totalBytes": 16158669
+    "totalBytes": 16158612
   }
 }

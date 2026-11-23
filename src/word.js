@@ -55,10 +55,62 @@ function orderHtml(entry, neighbors) {
   }).join('') + '</details>';
 }
 
-// 어종 띠: 고유어·한자어·외래어·혼종어와 원어. 어종을 모르면 띠 없이 원어만 따로 보인다.
-export const KIND_LABEL = { 고유어: '고유어 (순우리말)', 한자어: '한자어', 외래어: '외래어', 혼종어: '혼종어 (섞어 만든 말)' };
-export const kindHtml = (entry) => KIND_LABEL[entry.kind] ? `<p class="word-kind"><span class="kind-badge" data-kind="${entry.kind}">${KIND_LABEL[entry.kind]}</span>` +
-  (entry.origin ? ` <span class="kind-origin">원어 ${esc(entry.origin)}</span>` : '') + '</p>' : '';
+// ---------- 어종 띠와 풀이 (6학년 '소중한 우리말' 수준의 말로, '혼종어'·'귀화어' 같은 용어는 쓰지 않는다) ----------
+// 원어 표기의 기호(▽·←)를 빼고, 'A/B하다'처럼 여러 표기가 있으면 첫 표기에 뒤쪽 우리말 끝(하다 등)을 붙인다.
+export function cleanOrigin(origin) {
+  const parts = String(origin ?? '').normalize('NFC').replace(/[▽▼←^]/g, '').split('/').map((s) => s.trim());
+  const suffix = parts.at(-1).match(/[가-힣]+$/)?.[0];
+  return suffix && !parts[0].endsWith(suffix) ? parts[0] + suffix : parts[0];
+}
+const KIND_OF = (token) => (/^[가-힣]/.test(token) ? '고유어' : /^[一-鿿]/.test(token) ? '한자어' : '외래어');
+// 섞인 말을 조각으로 나눈다. 숭고하다 + 崇高하다 → [숭고(崇高) 한자어, 하다 고유어]. 못 나누면 null.
+export function kindParts(w, origin) {
+  const tokens = cleanOrigin(origin).match(/[一-鿿]+|[가-힣]+|[A-Za-z][A-Za-z .'-]*[A-Za-z]|[A-Za-z]/g);
+  const syllables = [...w.normalize('NFC')];
+  if (!tokens || tokens.length < 2 || tokens.filter((t) => KIND_OF(t) === '외래어').length > 1) return null;
+  // 한자는 한 글자에 한 음절, 우리말은 그대로, 외국 글자 조각은 남는 음절을 모두 가져간다.
+  const fixed = tokens.reduce((sum, t) => sum + (KIND_OF(t) === '외래어' ? 0 : t.length), 0);
+  const parts = [];
+  let at = 0;
+  for (const token of tokens) {
+    const kind = KIND_OF(token), size = kind === '외래어' ? syllables.length - fixed : token.length;
+    const text = syllables.slice(at, at + size).join('');
+    if (size < 1 || text.length !== size || (kind === '고유어' && text !== token)) return null;
+    parts.push(kind === '고유어' ? { text, kind } : { text, kind, src: token });
+    at += size;
+  }
+  return at === syllables.length && new Set(parts.map((p) => p.kind)).size > 1 ? parts : null;
+}
+// 외국에서 들어왔거나 한자에서 왔지만 오래 써서 우리말로 굳은 낱말(사전은 고유어로 본다).
+const FOREIGN_ROOTS = { 빵: '포르투갈어 pão에서', 담배: '포르투갈어 tabaco에서', 가방: '네덜란드어 kabas가 일본을 거쳐',
+  고무: '프랑스어 gomme에서', 구두: '일본어 kutsu(구쓰)에서', 냄비: '일본어 nabe(나베)에서' };
+const HANJA_ROOTS = { 배추: '白菜(백채)', 성냥: '石硫黃(석류황)', 숭늉: '熟冷(숙랭)', 김치: '沈菜(침채)', 상추: '生菜(생채)',
+  고추: '苦椒(고초)', 가난: '艱難(간난)', 사냥: '山行(산행)', 짐승: '衆生(중생)', 감자: '甘藷(감저)' };
+const withTopic = (text, src) => `'${text}'${src ? `(${src})` : ''}${hasBatchim(text) ? '은' : '는'}`;
+export function kindInfo(entry) {
+  const origin = entry.origin ? cleanOrigin(entry.origin) : '';
+  if (entry.kind === '고유어') {
+    if (!origin && FOREIGN_ROOTS[entry.w]) return { label: '고유어', text: `${FOREIGN_ROOTS[entry.w]} 들어왔지만, 오래 써서 우리말처럼 굳어진 말이에요. 그래서 사전에서는 고유어로 봐요.` };
+    if (!origin && HANJA_ROOTS[entry.w]) return { label: '고유어', text: `한자 ${HANJA_ROOTS[entry.w]}에서 왔지만, 소리가 바뀌어 우리말처럼 굳어진 말이에요. 그래서 사전에서는 고유어로 봐요.` };
+    return { label: '고유어', text: '예부터 우리가 써 온 순우리말이에요.' };
+  }
+  if (entry.kind === '한자어') return { label: '한자어', origin, text: `한자${origin ? ` ${origin}` : ''}로 쓰는 말이에요.` };
+  if (entry.kind === '외래어') return { label: '외래어', origin, text: `다른 나라 말${origin ? ` ${origin}` : ''}에서 들어와 우리말처럼 쓰는 말이에요.` };
+  if (entry.kind === '혼종어') {
+    const parts = kindParts(entry.w, entry.origin);
+    if (!parts) return { label: '섞인 말', origin, text: '고유어·한자어·외래어 가운데 서로 다른 말이 합쳐진 낱말이에요.' };
+    return { label: [...new Set(parts.map((p) => p.kind))].join(' + '), origin,
+      text: parts.map((p, i) => `${withTopic(p.text, p.src)} ${p.kind}${i === parts.length - 1 ? '예요.' : ','}`).join(' ') + ' 서로 다른 말이 합쳐진 낱말이에요.' };
+  }
+  return null;
+}
+// 어종을 모르면 띠를 만들지 않고, 원어는 entryHtml에서 따로 보인다.
+export function kindHtml(entry) {
+  const info = kindInfo(entry);
+  if (!info) return '';
+  return `<div class="word-kind"><p><span class="kind-badge" data-kind="${entry.kind}">${esc(info.label)}</span>` +
+    (info.origin ? ` <span class="kind-origin">원어 ${esc(info.origin)}</span>` : '') + `</p><p class="kind-note">${esc(info.text)}</p></div>`;
+}
 
 export function entryHtml(entry, neighbors) {
   const grades = ['학교 가기 전', '1~2학년', '3~4학년', '5~6학년'];

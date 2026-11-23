@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { KINDS, MAX_SCORE, scoreForTries, summarize, originClue, parseBests, serializeBests, resultPraise } from '../src/wordkind.js';
 import { starCount } from '../src/game-ui.js';
 import { randomSet } from '../src/random.js';
-import { kindHtml, topic } from '../src/word.js';
+import { kindHtml, kindInfo, kindParts, cleanOrigin, topic } from '../src/word.js';
 import { linkGame } from '../scripts/data/games.mjs';
 
 test('우리말 분류 점수: 한 번에 맞히면 2점, 두 번째에 맞히면 1점, 못 맞히면 0점', () => {
@@ -33,11 +33,40 @@ test('원어 단서와 조사', () => {
   assert.equal(topic('휴지통'), "'휴지통'은");
 });
 
-test('쪽지 어종 띠: 어종과 원어를 함께, 어종을 모르면 띠를 만들지 않는다', () => {
-  assert.match(kindHtml({ kind: '한자어', origin: '圖書館' }), /data-kind="한자어">한자어<\/span> <span class="kind-origin">원어 圖書館/);
-  assert.match(kindHtml({ kind: '고유어' }), /고유어 \(순우리말\)<\/span><\/p>$/);
-  assert.equal(kindHtml({ origin: '蔘' }), '');
-  assert.match(kindHtml({ kind: '외래어', origin: '<b>' }), /&lt;b&gt;/);
+test('쪽지 어종 띠: 어종과 원어, 쉬운 풀이를 함께 보이고 어종을 모르면 띠를 만들지 않는다', () => {
+  assert.match(kindHtml({ w: '도서관', kind: '한자어', origin: '圖書館' }), /data-kind="한자어">한자어<\/span> <span class="kind-origin">원어 圖書館<\/span><\/p><p class="kind-note">한자 圖書館로 쓰는 말이에요/);
+  assert.match(kindHtml({ w: '하늘', kind: '고유어' }), /순우리말이에요/);
+  assert.equal(kindHtml({ w: '삼', origin: '蔘' }), '');
+  assert.match(kindHtml({ w: 'x', kind: '외래어', origin: '<b>' }), /&lt;b&gt;/);
+  // 어려운 용어는 쓰지 않는다
+  for (const entry of [{ w: '숭고하다', kind: '혼종어', origin: '崇高하다' }, { w: '빵', kind: '고유어' }, { w: '담요', kind: '혼종어' }])
+    assert.doesNotMatch(kindHtml(entry), /혼종어<|귀화어/);
+});
+
+test('원어 정리: 기호를 빼고 여러 표기 중 첫 표기에 우리말 끝을 붙인다', () => {
+  assert.equal(cleanOrigin('感歎/感嘆하다'), '感歎하다');
+  assert.equal(cleanOrigin('沙糖▽/砂糖▽'), '沙糖');
+  assert.equal(cleanOrigin('←air conditioner'), 'air conditioner');
+});
+
+test('섞인 말 나누기: 한자·우리말·외국 글자 조각을 낱말 음절에 맞춘다', () => {
+  const show = (w, o) => kindParts(w, o)?.map((p) => `${p.text}${p.src ? `(${p.src})` : ''}:${p.kind}`).join(' ');
+  assert.equal(show('숭고하다', '崇高하다'), '숭고(崇高):한자어 하다:고유어');
+  assert.equal(show('금메달', '金medal'), '금(金):한자어 메달(medal):외래어');
+  assert.equal(show('물파스', '물←Pasta'), '물:고유어 파스(Pasta):외래어');
+  assert.equal(show('감탄하다', '感歎/感嘆하다'), '감탄(感歎):한자어 하다:고유어');
+  assert.equal(kindParts('관리실', '管理室'), null);
+  assert.equal(kindParts('하다', '崇高하다'), null);
+  assert.equal(kindParts('담요', undefined), null);
+  assert.equal(kindInfo({ w: '숭고하다', kind: '혼종어', origin: '崇高하다' }).text, "'숭고'(崇高)는 한자어, '하다'는 고유어예요. 서로 다른 말이 합쳐진 낱말이에요.");
+  assert.equal(kindInfo({ w: '숭고하다', kind: '혼종어', origin: '崇高하다' }).label, '한자어 + 고유어');
+  assert.equal(kindInfo({ w: '담요', kind: '혼종어' }).label, '섞인 말');
+});
+
+test('외국에서 왔거나 한자에서 왔지만 우리말로 굳은 낱말은 뿌리를 풀어 준다', () => {
+  assert.match(kindInfo({ w: '빵', kind: '고유어' }).text, /^포르투갈어 pão에서 들어왔지만, 오래 써서 우리말처럼 굳어진 말이에요\. 그래서 사전에서는 고유어로 봐요\.$/);
+  assert.match(kindInfo({ w: '배추', kind: '고유어' }).text, /^한자 白菜\(백채\)에서 왔지만, 소리가 바뀌어/);
+  assert.equal(kindInfo({ w: '하늘', kind: '고유어' }).text, '예부터 우리가 써 온 순우리말이에요.');
 });
 
 test('무작위 도전은 문제 은행에서 겹치지 않게 8개를 뽑는다', () => {
